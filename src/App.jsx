@@ -1,6 +1,8 @@
 import React, { useMemo, useState } from 'react';
 import Dashboard from './pages/Dashboard';
 import Teams from './pages/Teams';
+import Standups from './pages/Standups';
+import History from './pages/History';
 import LeftSidebar from './components/LeftSidebar';
 import TopBar from './components/TopBar';
 import NewStandupModal from './components/NewStandupModal';
@@ -45,6 +47,54 @@ const INITIAL_MESSAGES = {
   'alex-rivera': []
 };
 
+const INITIAL_HISTORY_LOGS = [
+  {
+    id: 1,
+    dateGroup: 'OCT 24, 2023',
+    dateGroupColor: 'bg-[#d5ecd4] text-[#4a7251]',
+    user: 'Jordan Smith',
+    role: 'Senior Engineer',
+    time: '09:14 AM',
+    dateFull: 'October 24, 2023',
+    avatar: 'https://i.pravatar.cc/150?u=jordan',
+    snippet: 'Completed the CI/CD pipeline integration for the mobile module. Starting on API...',
+    today: 'Finalized the CI/CD pipeline integration for the new mobile module. This involved configuring the YAML schemas and ensuring automated unit tests trigger on every push to the staging branch.\n\n• Resolved the failing build hook for iOS distribution.\n• Updated documentation for the new deployment flow.\n• Refactored legacy bash scripts into Python for better readability.',
+    tomorrow: "Starting the API refactoring to support multi-tenancy. I'll be focused on the authentication middleware first.",
+    blockers: 'No critical blockers today.',
+    hasBlockers: false
+  },
+  {
+    id: 2,
+    dateGroup: 'OCT 24, 2023',
+    dateGroupColor: 'bg-[#d5ecd4] text-[#4a7251]',
+    user: 'Sarah Parker',
+    role: 'Product Designer',
+    time: '08:45 AM',
+    dateFull: 'October 24, 2023',
+    avatar: 'https://i.pravatar.cc/150?u=sarah',
+    snippet: 'Reviewing PR #422 regarding the databa...',
+    today: 'Reviewed PR #422 and provided design feedback. Worked on the new Dashboard mockups.',
+    tomorrow: 'Continue refining the History page and start user testing.',
+    blockers: 'Need access to the new staging environment.',
+    hasBlockers: true
+  },
+  {
+    id: 3,
+    dateGroup: 'OCT 23, 2023',
+    dateGroupColor: 'bg-[#e4dcf4] text-[#5e4b85]',
+    user: 'Mike Ross',
+    role: 'Backend Engineer',
+    time: '10:02 AM',
+    dateFull: 'October 23, 2023',
+    avatar: 'https://i.pravatar.cc/150?u=mike',
+    snippet: 'Blocked by environment issues in staging....',
+    today: 'Attempted to deploy the new auth service but ran into staging environment issues.',
+    tomorrow: 'Will work with DevOps to resolve the staging issues and complete the deployment.',
+    blockers: 'Staging database is currently unreachable.',
+    hasBlockers: true
+  }
+];
+
 function App() {
   const [activeTab, setActiveTab] = useState('Dashboard');
   const [selectedDate, setSelectedDate] = useState(14);
@@ -70,6 +120,11 @@ function App() {
   ]);
   const [chatMessages, setChatMessages] = useState([{ id: 1, sender: 'Sarah Kim', text: 'Are we set for backend sync?', time: '10:22 AM' }]);
   const [newMessage, setNewMessage] = useState('');
+  const [historyLogs, setHistoryLogs] = useState(INITIAL_HISTORY_LOGS);
+
+  const handleAddHistoryLog = (newLog) => {
+    setHistoryLogs([newLog, ...historyLogs]);
+  };
 
   const filteredMeetings = useMemo(() => meetings.filter((m) => m.day === selectedDate && (m.title.toLowerCase().includes(searchQuery.toLowerCase()) || m.tag.toLowerCase().includes(searchQuery.toLowerCase()))), [meetings, selectedDate, searchQuery]);
 
@@ -187,7 +242,7 @@ function App() {
         handleSendMessage={handleSendMessage}
       />
 
-      {activeTab === 'Teams' ? (
+      {activeTab === 'Teams' && (
         <Teams
           isSidebarOpen={isSidebarOpen}
           setIsSidebarOpen={setIsSidebarOpen}
@@ -204,7 +259,17 @@ function App() {
           handleKeyPress={handleKeyPress}
           handleSendTeamMessage={handleSendTeamMessage}
         />
-      ) : (
+      )}
+
+      {activeTab === 'Standups' && (
+        <Standups setActiveTab={setActiveTab} isSidebarOpen={isSidebarOpen} handleAddHistoryLog={handleAddHistoryLog} />
+      )}
+
+      {activeTab === 'History' && (
+        <History isSidebarOpen={isSidebarOpen} historyLogs={historyLogs} searchQuery={searchQuery} />
+      )}
+
+      {activeTab !== 'Teams' && activeTab !== 'Standups' && activeTab !== 'History' && (
         <Dashboard
           activeTab={activeTab}
           setActiveTab={setActiveTab}

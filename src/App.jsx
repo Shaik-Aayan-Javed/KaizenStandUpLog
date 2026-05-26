@@ -1,8 +1,11 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import Dashboard from './pages/Dashboard';
 import Teams from './pages/Teams';
 import Standups from './pages/Standups';
 import History from './pages/History';
+import Settings from './pages/Settings';
+import Login from './pages/Login';
+import Register from './pages/Register';
 import LeftSidebar from './components/LeftSidebar';
 import TopBar from './components/TopBar';
 import NewStandupModal from './components/NewStandupModal';
@@ -113,7 +116,7 @@ function App() {
   const [chatMessagesLog, setChatMessagesLog] = useState(INITIAL_MESSAGES);
   const [chatInputText, setChatInputText] = useState('');
 
-  const [formData, setFormData] = useState({ title: '', time: '10:00', tag: '#engineering', type: 'general', status: '' });
+  const [formData, setFormData] = useState({ title: '', time: '10:00', endTime: '11:00', tag: '#engineering', type: 'general', status: '', isActive: false, isPinned: false });
   const [notifications, setNotifications] = useState([
     { id: 1, text: 'Sarah Kim tagged you in #architecture sync', time: '5m ago', read: false },
     { id: 2, text: 'Daily Standup scheduled for 09:00', time: '1h ago', read: true }
@@ -122,11 +125,69 @@ function App() {
   const [newMessage, setNewMessage] = useState('');
   const [historyLogs, setHistoryLogs] = useState(INITIAL_HISTORY_LOGS);
 
+  const [registeredUsers, setRegisteredUsers] = useState(() => {
+    const savedUsers = window.localStorage.getItem('kaizen_registered_users');
+    return savedUsers ? JSON.parse(savedUsers) : [];
+  });
+
+  const [authUser, setAuthUser] = useState(() => {
+    const savedUser = window.localStorage.getItem('kaizen_auth_user');
+    return savedUser ? JSON.parse(savedUser) : null;
+  });
+
+  const [isAuthenticated, setIsAuthenticated] = useState(() => !!window.localStorage.getItem('kaizen_auth_user'));
+  const [authMode, setAuthMode] = useState('login');
+
+  useEffect(() => {
+    window.localStorage.setItem('kaizen_registered_users', JSON.stringify(registeredUsers));
+  }, [registeredUsers]);
+
+  useEffect(() => {
+    if (authUser) {
+      window.localStorage.setItem('kaizen_auth_user', JSON.stringify(authUser));
+    } else {
+      window.localStorage.removeItem('kaizen_auth_user');
+    }
+    setIsAuthenticated(!!authUser);
+  }, [authUser]);
+
   const handleAddHistoryLog = (newLog) => {
     setHistoryLogs([newLog, ...historyLogs]);
   };
 
   const filteredMeetings = useMemo(() => meetings.filter((m) => m.day === selectedDate && (m.title.toLowerCase().includes(searchQuery.toLowerCase()) || m.tag.toLowerCase().includes(searchQuery.toLowerCase()))), [meetings, selectedDate, searchQuery]);
+
+  const handleLogin = ({ email, password }) => {
+    const user = registeredUsers.find((u) => u.email.toLowerCase() === email.trim().toLowerCase());
+    if (!user) {
+      return { success: false, message: 'No account found. Please sign up.' };
+    }
+    if (user.password !== password) {
+      return { success: false, message: 'Invalid password. Please try again.' };
+    }
+    setAuthUser(user);
+    setActiveTab('Dashboard');
+    return { success: true };
+  };
+
+  const handleRegister = ({ fullName, email, password }) => {
+    const normalizedEmail = email.trim().toLowerCase();
+    if (registeredUsers.some((u) => u.email.toLowerCase() === normalizedEmail)) {
+      return { success: false, message: 'This email is already registered. Please sign in.' };
+    }
+
+    const newUser = {
+      fullName: fullName.trim(),
+      email: normalizedEmail,
+      password,
+      avatar: 'https://i.pravatar.cc/150?img=47'
+    };
+
+    setRegisteredUsers([...registeredUsers, newUser]);
+    setAuthUser(newUser);
+    setActiveTab('Dashboard');
+    return { success: true };
+  };
 
   const handleDaySelect = (day) => setSelectedDate(day);
   const handleNextDay = () => {
@@ -141,9 +202,9 @@ function App() {
   const handleCreateStandup = (e) => {
     e.preventDefault();
     if (!formData.title.trim()) return;
-    setMeetings([...meetings, { id: Date.now(), time: formData.time, title: formData.title, tag: formData.tag, borderClass: 'border-primary', leftBarBg: 'bg-primary', tagColor: 'bg-primary-fixed text-on-primary-fixed-variant', day: selectedDate }]);
+    setMeetings([...meetings, { id: Date.now(), time: formData.time, endTime: formData.endTime, title: formData.title, tag: formData.tag, borderClass: 'border-primary', leftBarBg: 'bg-primary', tagColor: 'bg-primary-fixed text-on-primary-fixed-variant', day: selectedDate, isActive: formData.isActive, isPinned: formData.isPinned }]);
     setIsNewStandupOpen(false);
-    setFormData({ title: '', time: '10:00', tag: '#engineering', type: 'general', status: '' });
+    setFormData({ title: '', time: '10:00', endTime: '11:00', tag: '#engineering', type: 'general', status: '', isActive: false, isPinned: false });
   };
 
   const toggleStatus = (memberId, newStatus) => {
@@ -214,6 +275,14 @@ function App() {
     return { name: 'Chat Workspace', members: 0, desc: '' };
   }, [groups, dms, activeChatId]);
 
+  if (!isAuthenticated) {
+    return authMode === 'register' ? (
+      <Register onRegister={handleRegister} switchToLogin={() => setAuthMode('login')} />
+    ) : (
+      <Login onLogin={handleLogin} switchToRegister={() => setAuthMode('register')} />
+    );
+  }
+
   return (
     <div className="min-h-screen bg-background text-on-surface font-sans antialiased overflow-x-hidden">
       <LeftSidebar
@@ -240,6 +309,7 @@ function App() {
         newMessage={newMessage}
         setNewMessage={setNewMessage}
         handleSendMessage={handleSendMessage}
+        user={authUser}
       />
 
       {activeTab === 'Teams' && (
@@ -262,14 +332,18 @@ function App() {
       )}
 
       {activeTab === 'Standups' && (
-        <Standups setActiveTab={setActiveTab} isSidebarOpen={isSidebarOpen} handleAddHistoryLog={handleAddHistoryLog} />
+        <Standups setActiveTab={setActiveTab} isSidebarOpen={isSidebarOpen} handleAddHistoryLog={handleAddHistoryLog} userName={authUser?.fullName} />
       )}
 
       {activeTab === 'History' && (
         <History isSidebarOpen={isSidebarOpen} historyLogs={historyLogs} searchQuery={searchQuery} />
       )}
 
-      {activeTab !== 'Teams' && activeTab !== 'Standups' && activeTab !== 'History' && (
+      {activeTab === 'Settings' && (
+        <Settings isSidebarOpen={isSidebarOpen} />
+      )}
+
+      {activeTab !== 'Teams' && activeTab !== 'Standups' && activeTab !== 'History' && activeTab !== 'Settings' && (
         <Dashboard
           activeTab={activeTab}
           setActiveTab={setActiveTab}

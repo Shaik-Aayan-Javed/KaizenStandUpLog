@@ -20,8 +20,8 @@ function LeftSidebar({ isSidebarOpen, setIsSidebarOpen, activeTab, setActiveTab,
     >
       <div className="mb-10 px-3 flex justify-between items-center">
         <div>
-          <h1 className="text-xl font-bold tracking-tight text-primary">AsyncSync</h1>
-          <p className="text-xs text-on-surface-variant font-medium mt-0.5">Engineering Workspace</p>
+          <h1 className="text-xl font-bold tracking-tight text-primary">Kaizen</h1>
+          <p className="text-xs text-on-surface-variant font-medium mt-0.5">Workspace</p>
         </div>
         <button onClick={() => setIsSidebarOpen(false)} className="p-1 text-on-surface-variant hover:text-primary rounded-lg hover:bg-surface-container-highest/60 transition-colors cursor-pointer" title="Collapse Sidebar">
           <PanelLeftClose className="w-5 h-5" />

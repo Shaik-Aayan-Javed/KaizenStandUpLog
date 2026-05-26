@@ -1,0 +1,57 @@
+import React from 'react';
+import { X, Calendar } from 'lucide-react';
+
+function NewStandupModal({ isOpen, setIsNewStandupOpen, formData, setFormData, handleCreateStandup, selectedDate, calendarDays }) {
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 bg-inverse-surface/40 backdrop-blur-sm z-50 flex items-center justify-center p-4 transition-all duration-200">
+      <div className="bg-white w-full max-w-md rounded-2xl border border-outline-variant p-6 shadow-2xl relative">
+        <button onClick={() => setIsNewStandupOpen(false)} className="absolute right-4 top-4 text-on-surface-variant hover:text-on-surface p-1 rounded-md hover:bg-slate-100 transition-colors cursor-pointer">
+          <X className="w-5 h-5" />
+        </button>
+        <div className="flex items-center gap-2 mb-1">
+          <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary">
+            <Calendar className="w-4.5 h-4.5" />
+          </div>
+          <div>
+            <h3 className="text-sm font-bold text-primary font-headline-md leading-none">Schedule Standup / Sync</h3>
+            <span className="text-[10px] text-on-surface-variant font-medium block mt-1">
+              Adding to {calendarDays.find((d) => d.date === selectedDate)?.labelFull} 1{selectedDate}, 2023
+            </span>
+          </div>
+        </div>
+        <hr className="border-outline-variant/60 my-4" />
+        <form onSubmit={handleCreateStandup} className="space-y-4">
+          <input
+            type="text"
+            required
+            value={formData.title}
+            onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+            placeholder="e.g. API Architecture Review"
+            className="w-full bg-slate-50 border border-outline-variant rounded-lg px-3 py-2 text-xs focus:outline-none focus:ring-1 focus:ring-primary"
+          />
+          <div className="grid grid-cols-2 gap-4">
+            <input type="time" required value={formData.time} onChange={(e) => setFormData({ ...formData, time: e.target.value })} className="w-full bg-slate-50 border border-outline-variant rounded-lg px-3 py-2 text-xs" />
+            <select value={formData.tag} onChange={(e) => setFormData({ ...formData, tag: e.target.value })} className="w-full bg-slate-50 border border-outline-variant rounded-lg px-3 py-2 text-xs">
+              <option value="#engineering">#engineering</option>
+              <option value="#architecture">#architecture</option>
+              <option value="#product">#product</option>
+              <option value="#management">#management</option>
+            </select>
+          </div>
+          <div className="pt-2 flex justify-end gap-2">
+            <button type="button" onClick={() => setIsNewStandupOpen(false)} className="px-4 py-2 border border-outline-variant text-xs font-bold rounded-lg hover:bg-slate-100">
+              Cancel
+            </button>
+            <button type="submit" className="px-4 py-2 bg-primary text-on-primary text-xs font-bold rounded-lg hover:bg-primary-container">
+              Mount to Schedule
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
+
+export default NewStandupModal;

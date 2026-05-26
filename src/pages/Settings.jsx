@@ -35,7 +35,7 @@ function Settings({ isSidebarOpen }) {
 
   return (
     <main className={`px-4 sm:px-5 lg:px-6 py-6 sm:py-7 lg:py-8 transition-all duration-300 ${isSidebarOpen ? 'ml-64' : 'ml-0'}`}>
-      <div className="max-w-4xl">
+      <div className="max-w-4xl mx-auto">
         {/* Header */}
         <div className="mb-8">
           <h1 className="text-[clamp(1.8rem,2.5vw,2.2rem)] font-bold text-on-surface leading-tight">Settings</h1>

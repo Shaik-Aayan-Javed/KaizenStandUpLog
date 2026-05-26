@@ -56,7 +56,7 @@ function LeftSidebar({ isSidebarOpen, setIsSidebarOpen, activeTab, setActiveTab,
       </nav>
 
       <div className="mt-auto space-y-4 pt-4 border-t border-outline-variant/60">
-        <button onClick={() => setIsNewStandupOpen(true)} className="w-full flex items-center justify-center gap-2 py-2.5 bg-primary text-on-primary rounded-xl font-bold hover:bg-primary-container transition-all shadow-sm active:scale-95 duration-150 text-sm cursor-pointer">
+        <button onClick={() => setActiveTab('Standups')} className="w-full flex items-center justify-center gap-2 py-2.5 bg-primary text-on-primary rounded-xl font-bold hover:bg-primary-container transition-all shadow-sm active:scale-95 duration-150 text-sm cursor-pointer">
           <PlusCircle className="w-4 h-4" />
           <span>New Standup</span>
         </button>

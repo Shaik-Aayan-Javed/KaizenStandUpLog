@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { History, Calendar, Ban } from 'lucide-react';
 
-function Standups({ setActiveTab, isSidebarOpen, handleAddHistoryLog }) {
+function Standups({ setActiveTab, isSidebarOpen, handleAddHistoryLog, userName }) {
   const [yesterday, setYesterday] = useState('');
   const [today, setToday] = useState('');
   const [blockers, setBlockers] = useState('');
@@ -25,12 +25,13 @@ function Standups({ setActiveTab, isSidebarOpen, handleAddHistoryLog }) {
         id: Date.now(),
         dateGroup: dateGroup,
         dateGroupColor: 'bg-[#d5ecd4] text-[#4a7251]', // Using the green color for new logs
-        user: 'Alex Chen',
+        user: 'Alex Rivera',
         role: 'Lead Developer',
         time: now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
         dateFull: now.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }),
-        avatar: 'https://i.pravatar.cc/150?u=alexchen',
+        avatar: 'https://i.pravatar.cc/150?img=47',
         snippet: (yesterday || today || blockers).substring(0, 50) + '...',
+
         today: yesterday || 'Nothing entered.',
         tomorrow: today || 'Nothing entered.',
         blockers: blockers || 'No critical blockers today.',
@@ -52,11 +53,11 @@ function Standups({ setActiveTab, isSidebarOpen, handleAddHistoryLog }) {
       <div className="p-8 max-w-4xl mx-auto">
         <div className="mb-10 border-b border-outline-variant pb-8">
           <p className="text-xs font-bold tracking-widest text-outline uppercase mb-2">DAILY STANDUP</p>
-        <h2 className="text-3xl font-bold text-on-surface mb-2">Good morning, Alex.</h2>
-        <p className="text-on-surface-variant text-sm">
-          Capture your progress and plans for today. Keep it concise to help the team stay aligned.
-        </p>
-      </div>
+          <h2 className="text-3xl font-bold text-on-surface mb-2">Good morning, {userName?.split(' ')[0] || 'there'}.</h2>
+          <p className="text-on-surface-variant text-sm">
+            Capture your progress and plans for today. Keep it concise to help the team stay aligned.
+          </p>
+        </div>
 
       <div className="space-y-8">
         {/* Yesterday */}

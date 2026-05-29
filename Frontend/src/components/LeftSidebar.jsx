@@ -11,7 +11,7 @@ import {
   PanelLeftClose
 } from 'lucide-react';
 
-function LeftSidebar({ isSidebarOpen, setIsSidebarOpen, activeTab, setActiveTab, setIsNewStandupOpen }) {
+function LeftSidebar({ isSidebarOpen, setIsSidebarOpen, activeTab, setActiveTab, setIsNewStandupOpen, handleLogout }) {
   return (
     <aside
       className={`flex flex-col h-full py-6 px-4 bg-surface-container-low dark:bg-inverse-surface fixed left-0 top-0 border-r border-outline-variant z-30 transition-all duration-300 ease-in-out ${
@@ -65,7 +65,7 @@ function LeftSidebar({ isSidebarOpen, setIsSidebarOpen, activeTab, setActiveTab,
             <HelpCircle className="w-4.5 h-4.5" />
             <span>Help</span>
           </a>
-          <a href="#" onClick={(e) => { e.preventDefault(); alert('Logout simulated successfully.'); }} className="flex items-center gap-3 px-3 py-2 text-sm text-on-surface-variant hover:bg-surface-container-highest rounded-lg transition-colors">
+          <a href="#" onClick={(e) => { e.preventDefault(); handleLogout(); }} className="flex items-center gap-3 px-3 py-2 text-sm text-on-surface-variant hover:bg-surface-container-highest rounded-lg transition-colors">
             <LogOut className="w-4.5 h-4.5" />
             <span>Logout</span>
           </a>

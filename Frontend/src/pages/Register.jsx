@@ -7,7 +7,7 @@ function Register({ onRegister, switchToLogin }) {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
 
@@ -16,7 +16,7 @@ function Register({ onRegister, switchToLogin }) {
       return;
     }
 
-    const result = onRegister({ fullName, email, password });
+    const result = await onRegister({ fullName, email, password });
     if (!result.success) {
       setError(result.message);
     }

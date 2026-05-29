@@ -10,19 +10,6 @@ import LeftSidebar from './components/LeftSidebar';
 import TopBar from './components/TopBar';
 import NewStandupModal from './components/NewStandupModal';
 
-const INITIAL_MEETINGS = [
-  { id: 1, time: '09:00', title: 'Daily Standup', tag: '#engineering', borderClass: 'border-secondary', leftBarBg: 'bg-secondary', tagColor: 'bg-secondary-container text-on-secondary-container', day: 14 },
-  { id: 2, time: '10:30', title: 'Backend Sync', tag: '#architecture', borderClass: 'border-primary', leftBarBg: 'bg-primary', tagColor: 'bg-primary-fixed text-on-primary-fixed-variant', isActive: true, day: 14 },
-  { id: 3, time: '13:00', title: 'Design Review', tag: '#product', borderClass: 'border-tertiary-container', leftBarBg: 'bg-tertiary-container', tagColor: 'bg-tertiary-fixed text-on-tertiary-fixed-variant', day: 14 },
-  { id: 4, time: '15:00', title: 'Sprint Review', tag: '#management', borderClass: 'border-error', leftBarBg: 'bg-error', tagColor: 'bg-error-container text-on-error-container', isPinned: true, day: 14 }
-];
-
-const INITIAL_TEAM = [
-  { id: 1, name: 'Jordan Dai', status: 'Active', statusColor: 'bg-secondary-fixed-dim', textColor: 'text-secondary', avatar: 'https://i.pravatar.cc/60?img=1' },
-  { id: 2, name: 'Sarah Kim', status: 'In Focus', statusColor: 'bg-primary-fixed-dim', textColor: 'text-primary', avatar: 'https://i.pravatar.cc/60?img=2' },
-  { id: 3, name: 'Ryan Lee', status: 'Offline', statusColor: 'bg-outline-variant', textColor: 'text-on-surface-variant', avatar: 'https://i.pravatar.cc/60?img=3' }
-];
-
 const CALENDAR_DAYS = [
   { label: 'MON', date: 13, labelFull: 'Monday' },
   { label: 'TUE', date: 14, labelFull: 'Tuesday' },
@@ -33,76 +20,11 @@ const CALENDAR_DAYS = [
   { label: 'SUN', date: 19, labelFull: 'Sunday', dim: true }
 ];
 
-const INITIAL_GROUPS = [
-  { id: 'engineering-core', name: 'engineering-core', type: 'channel', members: 12, desc: 'Core development and infrastructure sync' },
-  { id: 'product-sync', name: 'product-sync', type: 'channel', members: 8, desc: 'Product strategy and milestone alignment' }
-];
-
-const INITIAL_DMS = [
-  { id: 'sarah-chen', name: 'Sarah Chen', type: 'dm', status: 'Active', avatar: 'https://i.pravatar.cc/60?img=5' },
-  { id: 'alex-rivera', name: 'Alex Rivera', type: 'dm', status: 'Active', avatar: 'https://i.pravatar.cc/60?img=6' }
-];
-
-const INITIAL_MESSAGES = {
-  'engineering-core': [{ id: 101, sender: 'Sarah Chen', avatar: 'https://i.pravatar.cc/60?img=5', time: '10:24 AM', text: 'Can someone review the logger architecture draft?', reactions: { '??': 2 } }],
-  'product-sync': [],
-  'sarah-chen': [],
-  'alex-rivera': []
-};
-
-const INITIAL_HISTORY_LOGS = [
-  {
-    id: 1,
-    dateGroup: 'OCT 24, 2023',
-    dateGroupColor: 'bg-[#d5ecd4] text-[#4a7251]',
-    user: 'Jordan Smith',
-    role: 'Senior Engineer',
-    time: '09:14 AM',
-    dateFull: 'October 24, 2023',
-    avatar: 'https://i.pravatar.cc/150?u=jordan',
-    snippet: 'Completed the CI/CD pipeline integration for the mobile module. Starting on API...',
-    today: 'Finalized the CI/CD pipeline integration for the new mobile module. This involved configuring the YAML schemas and ensuring automated unit tests trigger on every push to the staging branch.\n\n• Resolved the failing build hook for iOS distribution.\n• Updated documentation for the new deployment flow.\n• Refactored legacy bash scripts into Python for better readability.',
-    tomorrow: "Starting the API refactoring to support multi-tenancy. I'll be focused on the authentication middleware first.",
-    blockers: 'No critical blockers today.',
-    hasBlockers: false
-  },
-  {
-    id: 2,
-    dateGroup: 'OCT 24, 2023',
-    dateGroupColor: 'bg-[#d5ecd4] text-[#4a7251]',
-    user: 'Sarah Parker',
-    role: 'Product Designer',
-    time: '08:45 AM',
-    dateFull: 'October 24, 2023',
-    avatar: 'https://i.pravatar.cc/150?u=sarah',
-    snippet: 'Reviewing PR #422 regarding the databa...',
-    today: 'Reviewed PR #422 and provided design feedback. Worked on the new Dashboard mockups.',
-    tomorrow: 'Continue refining the History page and start user testing.',
-    blockers: 'Need access to the new staging environment.',
-    hasBlockers: true
-  },
-  {
-    id: 3,
-    dateGroup: 'OCT 23, 2023',
-    dateGroupColor: 'bg-[#e4dcf4] text-[#5e4b85]',
-    user: 'Mike Ross',
-    role: 'Backend Engineer',
-    time: '10:02 AM',
-    dateFull: 'October 23, 2023',
-    avatar: 'https://i.pravatar.cc/150?u=mike',
-    snippet: 'Blocked by environment issues in staging....',
-    today: 'Attempted to deploy the new auth service but ran into staging environment issues.',
-    tomorrow: 'Will work with DevOps to resolve the staging issues and complete the deployment.',
-    blockers: 'Staging database is currently unreachable.',
-    hasBlockers: true
-  }
-];
-
 function App() {
   const [activeTab, setActiveTab] = useState('Dashboard');
   const [selectedDate, setSelectedDate] = useState(14);
-  const [meetings, setMeetings] = useState(INITIAL_MEETINGS);
-  const [teamMembers, setTeamMembers] = useState(INITIAL_TEAM);
+  const [meetings, setMeetings] = useState([]);
+  const [teamMembers, setTeamMembers] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [isNewStandupOpen, setIsNewStandupOpen] = useState(false);
@@ -110,10 +32,10 @@ function App() {
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [activeTeamMemberId, setActiveTeamMemberId] = useState(null);
 
-  const [groups, setGroups] = useState(INITIAL_GROUPS);
-  const [dms] = useState(INITIAL_DMS);
+  const [groups, setGroups] = useState([]);
+  const [dms, setDms] = useState([]);
   const [activeChatId, setActiveChatId] = useState('engineering-core');
-  const [chatMessagesLog, setChatMessagesLog] = useState(INITIAL_MESSAGES);
+  const [chatMessagesLog, setChatMessagesLog] = useState({});
   const [chatInputText, setChatInputText] = useState('');
 
   const [formData, setFormData] = useState({ title: '', time: '10:00', endTime: '11:00', tag: '#engineering', type: 'general', status: '', isActive: false, isPinned: false });
@@ -123,7 +45,7 @@ function App() {
   ]);
   const [chatMessages, setChatMessages] = useState([{ id: 1, sender: 'Sarah Kim', text: 'Are we set for backend sync?', time: '10:22 AM' }]);
   const [newMessage, setNewMessage] = useState('');
-  const [historyLogs, setHistoryLogs] = useState(INITIAL_HISTORY_LOGS);
+  const [historyLogs, setHistoryLogs] = useState([]);
 
   const [registeredUsers, setRegisteredUsers] = useState(() => {
     const savedUsers = window.localStorage.getItem('kaizen_registered_users');
@@ -151,42 +73,93 @@ function App() {
     setIsAuthenticated(!!authUser);
   }, [authUser]);
 
-  const handleAddHistoryLog = (newLog) => {
-    setHistoryLogs([newLog, ...historyLogs]);
+  useEffect(() => {
+    if (!isAuthenticated) return;
+    const fetchAllData = async () => {
+      try {
+        const [meetingsRes, teamRes, groupsRes, historyRes, chatRes] = await Promise.all([
+          fetch("http://localhost:5000/api/meetings"),
+          fetch("http://localhost:5000/api/teammembers"),
+          fetch("http://localhost:5000/api/groups"),
+          fetch("http://localhost:5000/api/historylogs"),
+          fetch("http://localhost:5000/api/chatmessages")
+        ]);
+        const mapId = (arr) => arr.map(item => ({ ...item, id: item._id }));
+        
+        const m = await meetingsRes.json();
+        const t = await teamRes.json();
+        const g = await groupsRes.json();
+        const h = await historyRes.json();
+        const c = await chatRes.json();
+        
+        setMeetings(mapId(m));
+        setTeamMembers(mapId(t));
+        
+        const groupsWithId = mapId(g);
+        setGroups(groupsWithId.filter(x => x.type === 'channel'));
+        setDms(groupsWithId.filter(x => x.type === 'dm'));
+        setHistoryLogs(mapId(h));
+        
+        const chatMap = {};
+        c.forEach(msg => {
+          if (!chatMap[msg.groupId]) chatMap[msg.groupId] = [];
+          chatMap[msg.groupId].push({ ...msg, id: msg._id });
+        });
+        setChatMessagesLog(chatMap);
+      } catch (err) {
+        console.error("Error fetching data:", err);
+      }
+    };
+    fetchAllData();
+  }, [isAuthenticated]);
+
+  const handleAddHistoryLog = async (newLog) => {
+    try {
+      const res = await fetch("http://localhost:5000/api/historylogs", {
+        method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(newLog)
+      });
+      const saved = await res.json();
+      setHistoryLogs([{ ...saved, id: saved._id }, ...historyLogs]);
+    } catch (err) { console.error(err); }
   };
 
   const filteredMeetings = useMemo(() => meetings.filter((m) => m.day === selectedDate && (m.title.toLowerCase().includes(searchQuery.toLowerCase()) || m.tag.toLowerCase().includes(searchQuery.toLowerCase()))), [meetings, selectedDate, searchQuery]);
 
-  const handleLogin = ({ email, password }) => {
-    const user = registeredUsers.find((u) => u.email.toLowerCase() === email.trim().toLowerCase());
-    if (!user) {
-      return { success: false, message: 'No account found. Please sign up.' };
-    }
-    if (user.password !== password) {
-      return { success: false, message: 'Invalid password. Please try again.' };
-    }
-    setAuthUser(user);
-    setActiveTab('Dashboard');
-    return { success: true };
+  const handleLogin = async ({ email, password }) => {
+    try {
+      const response = await fetch("http://localhost:5000/api/users/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password }),
+      });
+      const data = await response.json();
+      if (response.ok) {
+        setAuthUser(data.user);
+        setActiveTab('Dashboard');
+        return { success: true };
+      } else { return { success: false, message: data.message || "Login failed" }; }
+    } catch (error) { return { success: false, message: "Could not connect to server." }; }
   };
 
-  const handleRegister = ({ fullName, email, password }) => {
-    const normalizedEmail = email.trim().toLowerCase();
-    if (registeredUsers.some((u) => u.email.toLowerCase() === normalizedEmail)) {
-      return { success: false, message: 'This email is already registered. Please sign in.' };
-    }
+  const handleLogout = () => {
+    setAuthUser(null);
+  };
 
-    const newUser = {
-      fullName: fullName.trim(),
-      email: normalizedEmail,
-      password,
-      avatar: 'https://i.pravatar.cc/150?img=47'
-    };
 
-    setRegisteredUsers([...registeredUsers, newUser]);
-    setAuthUser(newUser);
-    setActiveTab('Dashboard');
-    return { success: true };
+  const handleRegister = async ({ fullName, email, password }) => {
+    try {
+      const response = await fetch("http://localhost:5000/api/users/add-user", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: fullName, email, password }),
+      });
+      const data = await response.json();
+      if (response.ok) {
+        setAuthUser(data.user);
+        setActiveTab('Dashboard');
+        return { success: true };
+      } else { return { success: false, message: data.message || "Registration failed" }; }
+    } catch (error) { return { success: false, message: "Could not connect to server." }; }
   };
 
   const handleDaySelect = (day) => setSelectedDate(day);
@@ -199,22 +172,35 @@ function App() {
     if (currentIndex > 0) setSelectedDate(CALENDAR_DAYS[currentIndex - 1].date);
   };
 
-  const handleCreateStandup = (e) => {
+  const handleCreateStandup = async (e) => {
     e.preventDefault();
     if (!formData.title.trim()) return;
-    setMeetings([...meetings, { id: Date.now(), time: formData.time, endTime: formData.endTime, title: formData.title, tag: formData.tag, borderClass: 'border-primary', leftBarBg: 'bg-primary', tagColor: 'bg-primary-fixed text-on-primary-fixed-variant', day: selectedDate, isActive: formData.isActive, isPinned: formData.isPinned }]);
+    const newMeeting = { time: formData.time, endTime: formData.endTime, title: formData.title, tag: formData.tag, borderClass: 'border-primary', leftBarBg: 'bg-primary', tagColor: 'bg-primary-fixed text-on-primary-fixed-variant', day: selectedDate, isActive: formData.isActive, isPinned: formData.isPinned };
+    try {
+      const res = await fetch("http://localhost:5000/api/meetings", {
+        method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(newMeeting)
+      });
+      const saved = await res.json();
+      setMeetings([...meetings, { ...saved, id: saved._id }]);
+    } catch(err) { console.error(err); }
     setIsNewStandupOpen(false);
     setFormData({ title: '', time: '10:00', endTime: '11:00', tag: '#engineering', type: 'general', status: '', isActive: false, isPinned: false });
   };
 
-  const toggleStatus = (memberId, newStatus) => {
+  const toggleStatus = async (memberId, newStatus) => {
     const statusMap = {
       Active: { color: 'bg-secondary-fixed-dim', text: 'text-secondary' },
       'In Focus': { color: 'bg-primary-fixed-dim', text: 'text-primary' },
       Offline: { color: 'bg-outline-variant', text: 'text-on-surface-variant' },
       Blocked: { color: 'bg-tertiary-fixed-dim', text: 'text-tertiary' }
     };
-    setTeamMembers(teamMembers.map((m) => (m.id === memberId ? { ...m, status: newStatus, statusColor: statusMap[newStatus].color, textColor: statusMap[newStatus].text } : m)));
+    try {
+      const res = await fetch(`http://localhost:5000/api/teammembers/${memberId}`, {
+        method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ status: newStatus, statusColor: statusMap[newStatus].color, textColor: statusMap[newStatus].text })
+      });
+      const updated = await res.json();
+      setTeamMembers(teamMembers.map((m) => (m.id === memberId ? { ...updated, id: updated._id } : m)));
+    } catch(err) { console.error(err); }
     setActiveTeamMemberId(null);
   };
 
@@ -225,11 +211,24 @@ function App() {
     setNewMessage('');
   };
 
-  const handleSendTeamMessage = (e) => {
+  const handleSendTeamMessage = async (e) => {
     if (e) e.preventDefault();
     if (!chatInputText.trim()) return;
-    const newMsg = { id: Date.now(), sender: 'Alex Chen (You)', avatar: 'https://i.pravatar.cc/60?img=8', time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }), text: chatInputText };
-    setChatMessagesLog({ ...chatMessagesLog, [activeChatId]: [...(chatMessagesLog[activeChatId] || []), newMsg] });
+    const msgObj = { 
+      groupId: activeChatId, 
+      sender: authUser?.name || authUser?.email || 'You', 
+      avatar: authUser?.avatar || 'https://i.pravatar.cc/150?img=47', 
+      time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }), 
+      text: chatInputText 
+    };
+    try {
+      const res = await fetch("http://localhost:5000/api/chatmessages", {
+        method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(msgObj)
+      });
+      const saved = await res.json();
+      const finalMsg = { ...saved, id: saved._id };
+      setChatMessagesLog({ ...chatMessagesLog, [activeChatId]: [...(chatMessagesLog[activeChatId] || []), finalMsg] });
+    } catch(err) { console.error(err); }
     setChatInputText('');
   };
 
@@ -240,37 +239,43 @@ function App() {
     }
   };
 
-  const handleAddReaction = (messageId, emoji) => {
-    setChatMessagesLog({
-      ...chatMessagesLog,
-      [activeChatId]: chatMessagesLog[activeChatId].map((msg) => {
-        if (msg.id === messageId) {
-          const reactions = { ...(msg.reactions || {}) };
-          reactions[emoji] = (reactions[emoji] || 0) + 1;
-          return { ...msg, reactions };
-        }
-        return msg;
-      })
-    });
+  const handleAddReaction = async (messageId, emoji) => {
+    try {
+      const res = await fetch(`http://localhost:5000/api/chatmessages/${messageId}/react`, {
+        method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ emoji })
+      });
+      const updated = await res.json();
+      const updatedMsg = { ...updated, id: updated._id };
+      setChatMessagesLog({
+        ...chatMessagesLog,
+        [activeChatId]: chatMessagesLog[activeChatId].map((msg) => msg.id === messageId ? updatedMsg : msg)
+      });
+    } catch(err) { console.error(err); }
   };
 
-  const handleCreateGroup = () => {
+  const handleCreateGroup = async () => {
     const name = prompt('Enter new Group / Channel Name (without spaces):');
     if (!name) return;
     const cleanName = name.trim().toLowerCase().replace(/\s+/g, '-');
     if (!cleanName) return;
-    const newChan = { id: cleanName, name: cleanName, type: 'channel', members: 1, desc: 'General project workspace' };
-    setGroups([...groups, newChan]);
-    setChatMessagesLog({ ...chatMessagesLog, [cleanName]: [] });
-    setActiveChatId(cleanName);
+    const newChan = { groupId: cleanName, name: cleanName, type: 'channel', members: 1, desc: 'General project workspace' };
+    try {
+      const res = await fetch("http://localhost:5000/api/groups", {
+        method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(newChan)
+      });
+      const saved = await res.json();
+      setGroups([...groups, { ...saved, id: saved._id }]);
+      setChatMessagesLog({ ...chatMessagesLog, [cleanName]: [] });
+      setActiveChatId(cleanName);
+    } catch(err) { console.error(err); }
   };
 
   const markAllNotificationsAsRead = () => setNotifications(notifications.map((n) => ({ ...n, read: true })));
 
   const activeChatInfo = useMemo(() => {
-    const selectedGroup = groups.find((g) => g.id === activeChatId);
+    const selectedGroup = groups.find((g) => g.groupId === activeChatId);
     if (selectedGroup) return selectedGroup;
-    const selectedDm = dms.find((d) => d.id === activeChatId);
+    const selectedDm = dms.find((d) => d.groupId === activeChatId);
     if (selectedDm) return { ...selectedDm, desc: selectedDm.status === 'Active' ? 'Active now' : 'Offline' };
     return { name: 'Chat Workspace', members: 0, desc: '' };
   }, [groups, dms, activeChatId]);
@@ -291,6 +296,7 @@ function App() {
         activeTab={activeTab}
         setActiveTab={setActiveTab}
         setIsNewStandupOpen={setIsNewStandupOpen}
+        handleLogout={handleLogout}
       />
 
       <TopBar

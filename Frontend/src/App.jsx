@@ -21,7 +21,9 @@ const CALENDAR_DAYS = [
 ];
 
 function App() {
-  const [activeTab, setActiveTab] = useState('Dashboard');
+  const [activeTab, setActiveTab] = useState(() => {
+    return window.sessionStorage.getItem('kaizen_active_tab') || 'Dashboard';
+  });
   const [selectedDate, setSelectedDate] = useState(14);
   const [meetings, setMeetings] = useState([]);
   const [teamMembers, setTeamMembers] = useState([]);
@@ -48,27 +50,31 @@ function App() {
   const [historyLogs, setHistoryLogs] = useState([]);
 
   const [registeredUsers, setRegisteredUsers] = useState(() => {
-    const savedUsers = window.localStorage.getItem('kaizen_registered_users');
+    const savedUsers = window.sessionStorage.getItem('kaizen_registered_users');
     return savedUsers ? JSON.parse(savedUsers) : [];
   });
 
   const [authUser, setAuthUser] = useState(() => {
-    const savedUser = window.localStorage.getItem('kaizen_auth_user');
+    const savedUser = window.sessionStorage.getItem('kaizen_auth_user');
     return savedUser ? JSON.parse(savedUser) : null;
   });
 
-  const [isAuthenticated, setIsAuthenticated] = useState(() => !!window.localStorage.getItem('kaizen_auth_user'));
+  const [isAuthenticated, setIsAuthenticated] = useState(() => !!window.sessionStorage.getItem('kaizen_auth_user'));
   const [authMode, setAuthMode] = useState('login');
 
   useEffect(() => {
-    window.localStorage.setItem('kaizen_registered_users', JSON.stringify(registeredUsers));
+    window.sessionStorage.setItem('kaizen_active_tab', activeTab);
+  }, [activeTab]);
+
+  useEffect(() => {
+    window.sessionStorage.setItem('kaizen_registered_users', JSON.stringify(registeredUsers));
   }, [registeredUsers]);
 
   useEffect(() => {
     if (authUser) {
-      window.localStorage.setItem('kaizen_auth_user', JSON.stringify(authUser));
+      window.sessionStorage.setItem('kaizen_auth_user', JSON.stringify(authUser));
     } else {
-      window.localStorage.removeItem('kaizen_auth_user');
+      window.sessionStorage.removeItem('kaizen_auth_user');
     }
     setIsAuthenticated(!!authUser);
   }, [authUser]);
@@ -78,11 +84,11 @@ function App() {
     const fetchAllData = async () => {
       try {
         const [meetingsRes, teamRes, groupsRes, historyRes, chatRes] = await Promise.all([
-          fetch("http://localhost:5000/api/meetings"),
-          fetch("http://localhost:5000/api/teammembers"),
-          fetch("http://localhost:5000/api/groups"),
-          fetch("http://localhost:5000/api/historylogs"),
-          fetch("http://localhost:5000/api/chatmessages")
+          fetch("http://localhost:5001/api/meetings"),
+          fetch("http://localhost:5001/api/teammembers"),
+          fetch("http://localhost:5001/api/groups"),
+          fetch("http://localhost:5001/api/historylogs"),
+          fetch("http://localhost:5001/api/chatmessages")
         ]);
         const mapId = (arr) => arr.map(item => ({ ...item, id: item._id }));
         
@@ -115,7 +121,7 @@ function App() {
 
   const handleAddHistoryLog = async (newLog) => {
     try {
-      const res = await fetch("http://localhost:5000/api/historylogs", {
+      const res = await fetch("http://localhost:5001/api/historylogs", {
         method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(newLog)
       });
       const saved = await res.json();
@@ -127,7 +133,7 @@ function App() {
 
   const handleLogin = async ({ email, password }) => {
     try {
-      const response = await fetch("http://localhost:5000/api/users/login", {
+      const response = await fetch("http://localhost:5001/api/users/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password }),
@@ -148,7 +154,7 @@ function App() {
 
   const handleRegister = async ({ fullName, email, password }) => {
     try {
-      const response = await fetch("http://localhost:5000/api/users/add-user", {
+      const response = await fetch("http://localhost:5001/api/users/add-user", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ name: fullName, email, password }),
@@ -177,7 +183,7 @@ function App() {
     if (!formData.title.trim()) return;
     const newMeeting = { time: formData.time, endTime: formData.endTime, title: formData.title, tag: formData.tag, borderClass: 'border-primary', leftBarBg: 'bg-primary', tagColor: 'bg-primary-fixed text-on-primary-fixed-variant', day: selectedDate, isActive: formData.isActive, isPinned: formData.isPinned };
     try {
-      const res = await fetch("http://localhost:5000/api/meetings", {
+      const res = await fetch("http://localhost:5001/api/meetings", {
         method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(newMeeting)
       });
       const saved = await res.json();
@@ -195,7 +201,7 @@ function App() {
       Blocked: { color: 'bg-tertiary-fixed-dim', text: 'text-tertiary' }
     };
     try {
-      const res = await fetch(`http://localhost:5000/api/teammembers/${memberId}`, {
+      const res = await fetch(`http://localhost:5001/api/teammembers/${memberId}`, {
         method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ status: newStatus, statusColor: statusMap[newStatus].color, textColor: statusMap[newStatus].text })
       });
       const updated = await res.json();
@@ -222,7 +228,7 @@ function App() {
       text: chatInputText 
     };
     try {
-      const res = await fetch("http://localhost:5000/api/chatmessages", {
+      const res = await fetch("http://localhost:5001/api/chatmessages", {
         method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(msgObj)
       });
       const saved = await res.json();
@@ -241,7 +247,7 @@ function App() {
 
   const handleAddReaction = async (messageId, emoji) => {
     try {
-      const res = await fetch(`http://localhost:5000/api/chatmessages/${messageId}/react`, {
+      const res = await fetch(`http://localhost:5001/api/chatmessages/${messageId}/react`, {
         method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ emoji })
       });
       const updated = await res.json();
@@ -260,7 +266,7 @@ function App() {
     if (!cleanName) return;
     const newChan = { groupId: cleanName, name: cleanName, type: 'channel', members: 1, desc: 'General project workspace' };
     try {
-      const res = await fetch("http://localhost:5000/api/groups", {
+      const res = await fetch("http://localhost:5001/api/groups", {
         method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(newChan)
       });
       const saved = await res.json();
@@ -338,7 +344,7 @@ function App() {
       )}
 
       {activeTab === 'Standups' && (
-        <Standups setActiveTab={setActiveTab} isSidebarOpen={isSidebarOpen} handleAddHistoryLog={handleAddHistoryLog} userName={authUser?.fullName} />
+        <Standups setActiveTab={setActiveTab} isSidebarOpen={isSidebarOpen} handleAddHistoryLog={handleAddHistoryLog} userName={authUser?.name} user={authUser} />
       )}
 
       {activeTab === 'History' && (
@@ -346,7 +352,7 @@ function App() {
       )}
 
       {activeTab === 'Settings' && (
-        <Settings isSidebarOpen={isSidebarOpen} />
+        <Settings isSidebarOpen={isSidebarOpen} user={authUser} />
       )}
 
       {activeTab !== 'Teams' && activeTab !== 'Standups' && activeTab !== 'History' && activeTab !== 'Settings' && (

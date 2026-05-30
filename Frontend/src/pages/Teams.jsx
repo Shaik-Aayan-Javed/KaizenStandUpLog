@@ -75,11 +75,11 @@ function Teams({
             </div>
             <ul className="space-y-0.5">
               {groups.map((group) => {
-                const isActive = activeChatId === group.id;
+                const isActive = activeChatId === group.groupId;
                 return (
                   <li key={group.id}>
                     <button
-                      onClick={() => setActiveChatId(group.id)}
+                      onClick={() => setActiveChatId(group.groupId)}
                       className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg transition-all text-left text-sm cursor-pointer ${
                         isActive
                           ? 'bg-primary-container text-on-primary-container font-semibold'
@@ -101,11 +101,11 @@ function Teams({
             </div>
             <ul className="space-y-0.5">
               {dms.map((dm) => {
-                const isActive = activeChatId === dm.id;
+                const isActive = activeChatId === dm.groupId;
                 return (
                   <li key={dm.id}>
                     <button
-                      onClick={() => setActiveChatId(dm.id)}
+                      onClick={() => setActiveChatId(dm.groupId)}
                       className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg transition-all text-left text-sm cursor-pointer ${
                         isActive
                           ? 'bg-primary-container text-on-primary-container font-semibold'

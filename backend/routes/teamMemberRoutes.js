@@ -23,7 +23,7 @@ router.post("/", async (req, res) => {
 
 router.put("/:id", async (req, res) => {
   try {
-    const updatedMember = await TeamMember.findByIdAndUpdate(req.params.id, req.body, { new: true });
+    const updatedMember = await TeamMember.findByIdAndUpdate(req.params.id, req.body, { returnDocument: 'after' });
     res.status(200).json(updatedMember);
   } catch (error) {
     res.status(500).json(error);

@@ -9,6 +9,8 @@ const meetingSchema = new mongoose.Schema({
   leftBarBg: { type: String },
   tagColor: { type: String },
   day: { type: Number },
+  date: { type: String },
+  completed: { type: Boolean, default: false },
   isActive: { type: Boolean, default: false },
   isPinned: { type: Boolean, default: false }
 });

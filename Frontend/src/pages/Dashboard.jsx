@@ -208,9 +208,14 @@ function Dashboard({
                           )}
 
                           <button
-                            onClick={() => {
+                            onClick={async () => {
                               if (confirm(`Remove "${meeting.title}" schedule card?`)) {
-                                setMeetings(meetings.filter((m) => m.id !== meeting.id));
+                                try {
+                                  await fetch(`http://localhost:5001/api/meetings/${meeting.id}`, { method: 'DELETE' });
+                                  setMeetings(meetings.filter((m) => m.id !== meeting.id));
+                                } catch (err) {
+                                  console.error("Failed to delete meeting", err);
+                                }
                               }
                             }}
                             className="opacity-0 group-hover:opacity-100 p-2 rounded-md hover:bg-slate-100 text-outline hover:text-error transition"

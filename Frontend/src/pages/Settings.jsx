@@ -1,13 +1,27 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { User, Briefcase, Bell, Lock, Zap, Upload, Eye } from 'lucide-react';
+import { useAuth } from '../context/AuthContext';
 
 function Settings({ isSidebarOpen, user }) {
+  const { updateAuthUser } = useAuth();
+
   const [profileData, setProfileData] = useState({
     fullName: user?.name || 'Alex Rivera',
-    title: 'Lead Frontend Engineer',
+    title: user?.title || 'Lead Frontend Engineer',
     email: user?.email || 'alex.rivera@kaizen.io',
     avatar: user?.avatar || 'https://i.pravatar.cc/150?img=47'
   });
+
+  useEffect(() => {
+    if (user) {
+      setProfileData({
+        fullName: user.name,
+        title: user.title || 'Lead Frontend Engineer',
+        email: user.email,
+        avatar: user.avatar || 'https://i.pravatar.cc/150?img=47'
+      });
+    }
+  }, [user]);
 
   const [workspaceData, setWorkspaceData] = useState({
     workspaceName: 'Kaizen',
@@ -26,13 +40,22 @@ function Settings({ isSidebarOpen, user }) {
   const [isSavingWorkspace, setIsSavingWorkspace] = useState(false);
   const [savedWorkspace, setSavedWorkspace] = useState(false);
 
-  const handleSaveProfile = () => {
+  const handleSaveProfile = async () => {
     setIsSavingProfile(true);
-    setTimeout(() => {
-      setIsSavingProfile(false);
+    const res = await updateAuthUser(user._id || user.id, {
+      name: profileData.fullName,
+      email: profileData.email,
+      title: profileData.title,
+      avatar: profileData.avatar
+    });
+    setIsSavingProfile(false);
+    
+    if (res.success) {
       setSavedProfile(true);
       setTimeout(() => setSavedProfile(false), 2000);
-    }, 800);
+    } else {
+      alert(res.message);
+    }
   };
 
   const handleSaveWorkspace = () => {
@@ -52,8 +75,30 @@ function Settings({ isSidebarOpen, user }) {
     setWorkspaceData({ ...workspaceData, [field]: value });
   };
 
+  const fileInputRef = React.useRef(null);
+
   const handleNotificationToggle = (field) => {
     setNotifications({ ...notifications, [field]: !notifications[field] });
+  };
+
+  const handleFileUpload = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    
+    if (file.size > 5 * 1024 * 1024) {
+      alert('File size exceeds 5MB limit.');
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      handleProfileChange('avatar', reader.result);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const triggerFileInput = () => {
+    fileInputRef.current?.click();
   };
 
   return (
@@ -75,16 +120,23 @@ function Settings({ isSidebarOpen, user }) {
           </div>
 
           <div className="flex gap-6 mb-6">
+            <input 
+              type="file" 
+              accept="image/png, image/jpeg" 
+              ref={fileInputRef} 
+              onChange={handleFileUpload} 
+              className="hidden" 
+            />
             <div className="relative">
-              <img src={profileData.avatar} alt="Profile" className="w-24 h-24 rounded-xl border-2 border-outline-variant" />
-              <button className="absolute bottom-0 right-0 bg-primary text-on-primary p-2 rounded-lg hover:bg-primary-container transition-colors">
+              <img src={profileData.avatar} alt="Profile" className="w-24 h-24 rounded-full border-2 border-outline-variant object-cover" />
+              <button onClick={triggerFileInput} className="absolute bottom-0 right-0 bg-primary text-on-primary p-2 rounded-full hover:bg-primary-container transition-colors cursor-pointer shadow-sm">
                 <Upload className="w-4 h-4" />
               </button>
             </div>
-            <div className="flex-1">
+            <div className="flex-1 flex flex-col justify-center">
               <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-on-surface-variant mb-4">PROFILE PICTURE</p>
               <p className="text-sm text-on-surface-variant mb-3">PNG, JPG up to 5MB</p>
-              <button className="px-4 py-2 border border-outline-variant rounded-lg text-sm font-bold hover:bg-slate-100 transition-colors">
+              <button onClick={triggerFileInput} className="px-4 py-2 border border-outline-variant rounded-lg text-sm font-bold hover:bg-slate-100 transition-colors cursor-pointer self-start">
                 Change
               </button>
             </div>

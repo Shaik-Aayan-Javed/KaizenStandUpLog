@@ -3,6 +3,7 @@ import { Search, X, Bell, MessageSquare, PanelLeftOpen } from 'lucide-react';
 
 function TopBar({
   activeTab,
+  setActiveTab,
   isSidebarOpen,
   setIsSidebarOpen,
   searchQuery,
@@ -19,6 +20,17 @@ function TopBar({
   handleSendMessage,
   user
 }) {
+  React.useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') {
+        if (isNotificationOpen) setIsNotificationOpen(false);
+        if (isChatOpen) setIsChatOpen(false);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isNotificationOpen, isChatOpen, setIsNotificationOpen, setIsChatOpen]);
+
   if (activeTab === 'Teams') return null;
 
   return (
@@ -92,10 +104,10 @@ function TopBar({
         </div>
 
         <img
-          onClick={() => alert('Profile clicked')}
+          onClick={() => setActiveTab('Settings')}
           src={user?.avatar || 'https://i.pravatar.cc/150?img=47'}
           alt={user?.name || 'Kaizen User'}
-          className="w-9 h-9 rounded-full border border-outline-variant/60 cursor-pointer shadow-sm hover:ring-2 hover:ring-primary/30 transition-all"
+          className="w-9 h-9 rounded-full border border-outline-variant/60 cursor-pointer shadow-sm hover:ring-2 hover:ring-primary/30 transition-all object-cover"
         />
       </div>
     </header>

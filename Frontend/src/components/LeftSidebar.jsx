@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   LayoutDashboard,
   Users,
@@ -10,11 +10,27 @@ import {
   LogOut,
   PanelLeftClose
 } from 'lucide-react';
+import { HelpModal } from './ui/HelpModal';
 
-function LeftSidebar({ isSidebarOpen, setIsSidebarOpen, activeTab, setActiveTab, setIsNewStandupOpen, handleLogout }) {
+function LeftSidebar({ isSidebarOpen, setIsSidebarOpen, activeTab, setActiveTab, setIsNewStandupOpen, handleLogout, isAnyPopupOpen }) {
+  const [isHelpOpen, setIsHelpOpen] = useState(false);
+
+  // Close sidebar on Escape key
+  React.useEffect(() => {
+    const handleKeyDown = (e) => {
+      // Only close if it's open, and no other modal (like Help or popups) is open
+      if (e.key === 'Escape' && isSidebarOpen && !isHelpOpen && !isAnyPopupOpen) {
+        setIsSidebarOpen(false);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isSidebarOpen, isHelpOpen, isAnyPopupOpen, setIsSidebarOpen]);
+
   return (
+    <>
     <aside
-      className={`flex flex-col h-full py-6 px-4 bg-surface-container-low dark:bg-inverse-surface fixed left-0 top-0 border-r border-outline-variant z-30 transition-all duration-300 ease-in-out ${
+      className={`flex flex-col h-full py-6 px-4 bg-slate-50 fixed left-0 top-0 border-r border-outline-variant/30 z-30 transition-all duration-300 ease-in-out ${
         isSidebarOpen ? 'w-64 opacity-100 translate-x-0' : 'w-0 opacity-0 -translate-x-full pointer-events-none'
       }`}
     >
@@ -23,7 +39,7 @@ function LeftSidebar({ isSidebarOpen, setIsSidebarOpen, activeTab, setActiveTab,
           <h1 className="text-xl font-bold tracking-tight text-primary">Kaizen</h1>
           <p className="text-xs text-on-surface-variant font-medium mt-0.5">Workspace</p>
         </div>
-        <button onClick={() => setIsSidebarOpen(false)} className="p-1 text-on-surface-variant hover:text-primary rounded-lg hover:bg-surface-container-highest/60 transition-colors cursor-pointer" title="Collapse Sidebar">
+        <button onClick={() => setIsSidebarOpen(false)} className="p-1 text-on-surface-variant hover:text-primary rounded-lg hover:bg-slate-200/50 transition-colors cursor-pointer" title="Collapse Sidebar">
           <PanelLeftClose className="w-5 h-5" />
         </button>
       </div>
@@ -42,10 +58,10 @@ function LeftSidebar({ isSidebarOpen, setIsSidebarOpen, activeTab, setActiveTab,
             <button
               key={item.name}
               onClick={() => setActiveTab(item.name)}
-              className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all duration-150 cursor-pointer ${
+              className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm transition-all duration-150 cursor-pointer ${
                 isActive
-                  ? 'text-primary font-bold border-r-2 border-primary bg-surface-container-highest'
-                  : 'text-on-surface-variant hover:bg-surface-container-highest/60 hover:text-on-surface'
+                  ? 'text-primary font-bold bg-primary/10'
+                  : 'text-slate-500 hover:bg-slate-200/50 hover:text-slate-700'
               }`}
             >
               <Icon className="w-5 h-5 flex-shrink-0" />
@@ -61,7 +77,7 @@ function LeftSidebar({ isSidebarOpen, setIsSidebarOpen, activeTab, setActiveTab,
           <span>New Standup</span>
         </button>
         <div className="space-y-0.5">
-          <a href="#" onClick={(e) => { e.preventDefault(); alert('Help & Documentation coming soon!'); }} className="flex items-center gap-3 px-3 py-2 text-sm text-on-surface-variant hover:bg-surface-container-highest rounded-lg transition-colors">
+          <a href="#" onClick={(e) => { e.preventDefault(); setIsHelpOpen(true); }} className="flex items-center gap-3 px-3 py-2 text-sm text-on-surface-variant hover:bg-surface-container-highest rounded-lg transition-colors">
             <HelpCircle className="w-4.5 h-4.5" />
             <span>Help</span>
           </a>
@@ -72,6 +88,8 @@ function LeftSidebar({ isSidebarOpen, setIsSidebarOpen, activeTab, setActiveTab,
         </div>
       </div>
     </aside>
+    <HelpModal isOpen={isHelpOpen} onClose={() => setIsHelpOpen(false)} />
+    </>
   );
 }
 

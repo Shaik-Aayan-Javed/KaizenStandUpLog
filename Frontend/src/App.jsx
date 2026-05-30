@@ -1,4 +1,9 @@
-import React, { useMemo, useState, useEffect } from 'react';
+import React, { useState, useMemo } from 'react';
+import { AuthProvider, useAuth } from './context/AuthContext';
+import { MeetingsProvider } from './context/MeetingsContext';
+import { TeamProvider } from './context/TeamContext';
+import { ChatProvider, useChat } from './context/ChatContext';
+
 import Dashboard from './pages/Dashboard';
 import Teams from './pages/Teams';
 import Standups from './pages/Standups';
@@ -6,357 +11,70 @@ import History from './pages/History';
 import Settings from './pages/Settings';
 import Login from './pages/Login';
 import Register from './pages/Register';
+
 import LeftSidebar from './components/LeftSidebar';
 import TopBar from './components/TopBar';
 import NewStandupModal from './components/NewStandupModal';
+import { ToastContainer } from './components/ui/Toast';
+import { useToast, ToastProvider } from './hooks/useToast';
+import { useCalendar } from './hooks/useCalendar';
+import { useMeetings } from './context/MeetingsContext';
 
-function formatLocalDate(date) {
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  const day = String(date.getDate()).padStart(2, '0');
-  return `${year}-${month}-${day}`;
-}
+// ─── Inner app (rendered once authenticated) ───────────────────────────
+function AppShell() {
+  const { authUser, authMode, setAuthMode, handleLogin, handleRegister, handleLogout, isAuthenticated } = useAuth();
+  const { handleCreateStandup } = useMeetings();
+  const { historyLogs, handleAddHistoryLog, groups, dms, activeChatId, setActiveChatId, chatMessagesLog, chatInputText, setChatInputText, handleKeyPress, handleSendTeamMessage, handleAddReaction, handleCreateGroup } = useChat();
+  const { toasts, toast, removeToast } = useToast();
+  const { selectedDate, calendarDays, handleDaySelect, handleNextDay, handlePrevDay, goToToday } = useCalendar();
 
-function getWeekStart(date) {
-  const d = new Date(date);
-  const day = d.getDay();
-  const diff = (day + 6) % 7; // make Monday as first day of week
-  d.setDate(d.getDate() - diff);
-  d.setHours(0, 0, 0, 0);
-  return d;
-}
-
-function getWeekDays(date) {
-  const start = getWeekStart(date);
-  return [...Array(7)].map((_, index) => {
-    const current = new Date(start);
-    current.setDate(start.getDate() + index);
-    return {
-      label: ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'][current.getDay()],
-      labelFull: ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'][current.getDay()],
-      date: current.getDate(),
-      monthName: current.toLocaleString('default', { month: 'long' }),
-      isoDate: formatLocalDate(current),
-      dim: false
-    };
-  });
-}
-
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5001';
-
-function App() {
-  const [activeTab, setActiveTab] = useState(() => {
-    return window.sessionStorage.getItem('kaizen_active_tab') || 'Dashboard';
-  });
-  const [selectedDate, setSelectedDate] = useState(() => {
-    const today = new Date();
-    return new Date(today.getFullYear(), today.getMonth(), today.getDate());
-  });
-  const [meetings, setMeetings] = useState([]);
-  const [teamMembers, setTeamMembers] = useState([]);
-  const [searchQuery, setSearchQuery] = useState('');
+  const [activeTab, setActiveTab] = useState(() => window.sessionStorage.getItem('kaizen_active_tab') || 'Dashboard');
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [isNewStandupOpen, setIsNewStandupOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
   const [isNotificationOpen, setIsNotificationOpen] = useState(false);
   const [isChatOpen, setIsChatOpen] = useState(false);
-  const [activeTeamMemberId, setActiveTeamMemberId] = useState(null);
-
-  const [groups, setGroups] = useState([]);
-  const [dms, setDms] = useState([]);
-  const [activeChatId, setActiveChatId] = useState('engineering-core');
-  const [chatMessagesLog, setChatMessagesLog] = useState({});
-  const [chatInputText, setChatInputText] = useState('');
-
-  const [formData, setFormData] = useState({ title: '', time: '10:00', endTime: '11:00', tag: '#analysis', type: 'general', status: '', isActive: false, isPinned: false });
-
-  const calendarDays = useMemo(() => getWeekDays(selectedDate), [selectedDate]);
-
-  const sprintTagStyles = {
-    '#analysis': { borderClass: 'border-secondary', leftBarBg: 'bg-secondary', tagColor: 'bg-secondary-container text-on-secondary-container' },
-    '#design': { borderClass: 'border-primary', leftBarBg: 'bg-primary', tagColor: 'bg-primary-fixed text-on-primary-fixed-variant' },
-    '#development': { borderClass: 'border-tertiary-container', leftBarBg: 'bg-tertiary-container', tagColor: 'bg-tertiary-fixed text-on-tertiary-fixed-variant' },
-    '#testing': { borderClass: 'border-error', leftBarBg: 'bg-error', tagColor: 'bg-error-container text-on-error-container' }
-  };
-  const [notifications, setNotifications] = useState([
+  const [notifications] = useState([
     { id: 1, text: 'Sarah Kim tagged you in #analysis sync', time: '5m ago', read: false },
-    { id: 2, text: 'Daily Standup scheduled for 09:00', time: '1h ago', read: true }
+    { id: 2, text: 'Daily Standup scheduled for 09:00', time: '1h ago', read: true },
   ]);
   const [chatMessages, setChatMessages] = useState([{ id: 1, sender: 'Sarah Kim', text: 'Are we set for backend sync?', time: '10:22 AM' }]);
   const [newMessage, setNewMessage] = useState('');
-  const [historyLogs, setHistoryLogs] = useState([]);
+  const [formData, setFormData] = useState({ title: '', time: '10:00', endTime: '11:00', tag: '#analysis', type: 'general', isActive: false, isPinned: false });
 
-  const [registeredUsers, setRegisteredUsers] = useState(() => {
-    const savedUsers = window.sessionStorage.getItem('kaizen_registered_users');
-    return savedUsers ? JSON.parse(savedUsers) : [];
-  });
-
-  const [authUser, setAuthUser] = useState(() => {
-    const savedUser = window.sessionStorage.getItem('kaizen_auth_user');
-    return savedUser ? JSON.parse(savedUser) : null;
-  });
-
-  const [isAuthenticated, setIsAuthenticated] = useState(() => !!window.sessionStorage.getItem('kaizen_auth_user'));
-  const [authMode, setAuthMode] = useState('login');
-
-  useEffect(() => {
+  React.useEffect(() => {
     window.sessionStorage.setItem('kaizen_active_tab', activeTab);
   }, [activeTab]);
 
-  useEffect(() => {
-    window.sessionStorage.setItem('kaizen_registered_users', JSON.stringify(registeredUsers));
-  }, [registeredUsers]);
-
-  useEffect(() => {
-    if (authUser) {
-      window.sessionStorage.setItem('kaizen_auth_user', JSON.stringify(authUser));
-    } else {
-      window.sessionStorage.removeItem('kaizen_auth_user');
-    }
-    setIsAuthenticated(!!authUser);
-  }, [authUser]);
-
-  useEffect(() => {
-    if (!isAuthenticated) return;
-    const fetchAllData = async () => {
-      try {
-        const [meetingsRes, teamRes, groupsRes, historyRes, chatRes] = await Promise.all([
-          fetch(`${API_URL}/api/meetings`),
-          fetch(`${API_URL}/api/teammembers`),
-          fetch(`${API_URL}/api/groups`),
-          fetch(`${API_URL}/api/historylogs`),
-          fetch(`${API_URL}/api/chatmessages`)
-        ]);
-          const mapId = (arr) => arr.map(item => ({ ...item, id: item._id }));
-        
-        const m = await meetingsRes.json();
-        const t = await teamRes.json();
-        const g = await groupsRes.json();
-        const h = await historyRes.json();
-        const c = await chatRes.json();
-        
-        setMeetings(mapId(m).map((item) => ({ ...item, completed: item.completed ?? false })));
-        setTeamMembers(mapId(t));
-        
-        const groupsWithId = mapId(g);
-        setGroups(groupsWithId.filter(x => x.type === 'channel'));
-        setDms(groupsWithId.filter(x => x.type === 'dm'));
-        setHistoryLogs(mapId(h));
-        
-        const chatMap = {};
-        c.forEach(msg => {
-          if (!chatMap[msg.groupId]) chatMap[msg.groupId] = [];
-          chatMap[msg.groupId].push({ ...msg, id: msg._id });
-        });
-        setChatMessagesLog(chatMap);
-      } catch (err) {
-        console.error("Error fetching data:", err);
-      }
-    };
-    fetchAllData();
-  }, [isAuthenticated]);
-
-  const handleAddHistoryLog = async (newLog) => {
-    try {
-      const res = await fetch(`${API_URL}/api/historylogs`, {
-        method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(newLog)
-      });
-      const saved = await res.json();
-      setHistoryLogs([{ ...saved, id: saved._id }, ...historyLogs]);
-    } catch (err) { console.error(err); }
-  };
-
-  const filteredMeetings = useMemo(() => {
-    const selectedIso = selectedDate.toISOString().split('T')[0];
-    return meetings.filter((m) => {
-      const matchesDay = m.day === selectedDate.getDate();
-      const matchesDate = m.date === selectedIso;
-      const matchesSearch = m.title.toLowerCase().includes(searchQuery.toLowerCase()) || (m.tag || '').toLowerCase().includes(searchQuery.toLowerCase());
-      return (matchesDay || matchesDate) && !m.completed && matchesSearch;
-    });
-  }, [meetings, selectedDate, searchQuery]);
-
-  const handleLogin = async ({ email, password }) => {
-    try {
-      const response = await fetch(`${API_URL}/api/users/login`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
-      });
-      const data = await response.json();
-      if (response.ok) {
-        setAuthUser(data.user);
-        setActiveTab('Dashboard');
-        return { success: true };
-      } else { return { success: false, message: data.message || "Login failed" }; }
-    } catch (error) { return { success: false, message: "Could not connect to server." }; }
-  };
-
-  const handleLogout = () => {
-    setAuthUser(null);
-  };
-
-
-  const handleRegister = async ({ fullName, email, password }) => {
-    try {
-      const response = await fetch(`${API_URL}/api/users/add-user`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name: fullName, email, password }),
-      });
-      const data = await response.json();
-      if (response.ok) {
-        setAuthUser(data.user);
-        setActiveTab('Dashboard');
-        return { success: true };
-      } else { return { success: false, message: data.message || "Registration failed" }; }
-    } catch (error) { return { success: false, message: "Could not connect to server." }; }
-  };
-
-  const handleDaySelect = (day) => setSelectedDate(day);
-  const handleNextDay = () => {
-    setSelectedDate((prev) => {
-      const next = new Date(prev);
-      next.setDate(prev.getDate() + 1);
-      return next;
-    });
-  };
-  const handlePrevDay = () => {
-    setSelectedDate((prev) => {
-      const previous = new Date(prev);
-      previous.setDate(prev.getDate() - 1);
-      return previous;
-    });
-  };
-
-  const handleCreateStandup = async (e) => {
-    e.preventDefault();
-    if (!formData.title.trim()) return;
-    const styles = sprintTagStyles[formData.tag] || sprintTagStyles['#analysis'];
-    const selectedIso = selectedDate.toISOString().split('T')[0];
-    const newMeeting = {
-      time: formData.time,
-      endTime: formData.endTime,
-      title: formData.title,
-      tag: formData.tag,
-      day: selectedDate.getDate(),
-      date: selectedIso,
-      isActive: formData.isActive,
-      isPinned: formData.isPinned,
-      completed: false,
-      ...styles
-    };
-    try {
-      const res = await fetch(`${API_URL}/api/meetings`, {
-        method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(newMeeting)
-      });
-      const saved = await res.json();
-      // Refresh meetings from backend to avoid stale state and ensure new times show correctly
-      try {
-        const allRes = await fetch(`${API_URL}/api/meetings`);
-        const all = await allRes.json();
-        const mapId = (arr) => arr.map(item => ({ ...item, id: item._id }));
-        setMeetings(mapId(all).map((item) => ({ ...item, completed: item.completed ?? false })));
-      } catch (err) {
-        // fallback: append the saved item if refresh fails
-        setMeetings((prev) => [...prev, { ...saved, id: saved._id }]);
-      }
-    } catch(err) { console.error(err); }
-    setIsNewStandupOpen(false);
-    setFormData({ title: '', time: '10:00', endTime: '11:00', tag: '#analysis', type: 'general', status: '', isActive: false, isPinned: false });
-  };
-
-  const toggleStatus = async (memberId, newStatus) => {
-    const statusMap = {
-      Active: { color: 'bg-secondary-fixed-dim', text: 'text-secondary' },
-      'In Focus': { color: 'bg-primary-fixed-dim', text: 'text-primary' },
-      Offline: { color: 'bg-outline-variant', text: 'text-on-surface-variant' },
-      Blocked: { color: 'bg-tertiary-fixed-dim', text: 'text-tertiary' }
-    };
-    try {
-      const res = await fetch(`${API_URL}/api/teammembers/${memberId}`, {
-        method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ status: newStatus, statusColor: statusMap[newStatus].color, textColor: statusMap[newStatus].text })
-      });
-      const updated = await res.json();
-      setTeamMembers(teamMembers.map((m) => (m.id === memberId ? { ...updated, id: updated._id } : m)));
-    } catch(err) { console.error(err); }
-    setActiveTeamMemberId(null);
-  };
+  const markAllNotificationsAsRead = () => {};
 
   const handleSendMessage = (e) => {
     e.preventDefault();
     if (!newMessage.trim()) return;
-    setChatMessages([...chatMessages, { id: Date.now(), sender: 'You', text: newMessage, time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) }]);
+    setChatMessages((prev) => [...prev, { id: Date.now(), sender: 'You', text: newMessage, time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) }]);
     setNewMessage('');
   };
 
-  const handleSendTeamMessage = async (e) => {
-    if (e) e.preventDefault();
-    if (!chatInputText.trim()) return;
-    const msgObj = { 
-      groupId: activeChatId, 
-      sender: authUser?.name || authUser?.email || 'You', 
-      avatar: authUser?.avatar || 'https://i.pravatar.cc/150?img=47', 
-      time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }), 
-      text: chatInputText 
-    };
-    try {
-      const res = await fetch(`${API_URL}/api/chatmessages`, {
-        method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(msgObj)
-      });
-      const saved = await res.json();
-      const finalMsg = { ...saved, id: saved._id };
-      setChatMessagesLog({ ...chatMessagesLog, [activeChatId]: [...(chatMessagesLog[activeChatId] || []), finalMsg] });
-    } catch(err) { console.error(err); }
-    setChatInputText('');
-  };
-
-  const handleKeyPress = (e) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault();
-      handleSendTeamMessage();
-    }
-  };
-
-  const handleAddReaction = async (messageId, emoji) => {
-    try {
-      const res = await fetch(`${API_URL}/api/chatmessages/${messageId}/react`, {
-        method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ emoji })
-      });
-      const updated = await res.json();
-      const updatedMsg = { ...updated, id: updated._id };
-      setChatMessagesLog({
-        ...chatMessagesLog,
-        [activeChatId]: chatMessagesLog[activeChatId].map((msg) => msg.id === messageId ? updatedMsg : msg)
-      });
-    } catch(err) { console.error(err); }
-  };
-
-  const handleCreateGroup = async () => {
-    const name = prompt('Enter new Group / Channel Name (without spaces):');
-    if (!name) return;
-    const cleanName = name.trim().toLowerCase().replace(/\s+/g, '-');
-    if (!cleanName) return;
-    const newChan = { groupId: cleanName, name: cleanName, type: 'channel', members: 1, desc: 'General project workspace' };
-    try {
-      const res = await fetch(`${API_URL}/api/groups`, {
-        method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(newChan)
-      });
-      const saved = await res.json();
-      setGroups([...groups, { ...saved, id: saved._id }]);
-      setChatMessagesLog({ ...chatMessagesLog, [cleanName]: [] });
-      setActiveChatId(cleanName);
-    } catch(err) { console.error(err); }
-  };
-
-  const markAllNotificationsAsRead = () => setNotifications(notifications.map((n) => ({ ...n, read: true })));
-
   const activeChatInfo = useMemo(() => {
-    const selectedGroup = groups.find((g) => g.groupId === activeChatId);
-    if (selectedGroup) return selectedGroup;
-    const selectedDm = dms.find((d) => d.groupId === activeChatId);
-    if (selectedDm) return { ...selectedDm, desc: selectedDm.status === 'Active' ? 'Active now' : 'Offline' };
+    const g = groups.find((g) => g.groupId === activeChatId);
+    if (g) return g;
+    const d = dms.find((d) => d.groupId === activeChatId);
+    if (d) return { ...d, desc: d.status === 'Active' ? 'Active now' : 'Offline' };
     return { name: 'Chat Workspace', members: 0, desc: '' };
   }, [groups, dms, activeChatId]);
+
+  const onCreateStandup = async (e) => {
+    e.preventDefault();
+    if (!formData.title.trim()) return;
+    try {
+      await handleCreateStandup(formData, selectedDate);
+      toast.success('Meeting scheduled successfully!');
+    } catch (err) {
+      toast.error('Failed to schedule meeting.');
+    }
+    setIsNewStandupOpen(false);
+    setFormData({ title: '', time: '10:00', endTime: '11:00', tag: '#analysis', type: 'general', isActive: false, isPinned: false });
+  };
 
   if (!isAuthenticated) {
     return authMode === 'register' ? (
@@ -368,98 +86,46 @@ function App() {
 
   return (
     <div className="min-h-screen bg-background text-on-surface font-sans antialiased overflow-x-hidden">
-      <LeftSidebar
-        isSidebarOpen={isSidebarOpen}
-        setIsSidebarOpen={setIsSidebarOpen}
-        activeTab={activeTab}
-        setActiveTab={setActiveTab}
-        setIsNewStandupOpen={setIsNewStandupOpen}
-        handleLogout={handleLogout}
-      />
+      <LeftSidebar isSidebarOpen={isSidebarOpen} setIsSidebarOpen={setIsSidebarOpen} activeTab={activeTab} setActiveTab={setActiveTab} setIsNewStandupOpen={setIsNewStandupOpen} handleLogout={handleLogout} isAnyPopupOpen={isNotificationOpen || isChatOpen || isNewStandupOpen} />
 
-      <TopBar
-        activeTab={activeTab}
-        isSidebarOpen={isSidebarOpen}
-        setIsSidebarOpen={setIsSidebarOpen}
-        searchQuery={searchQuery}
-        setSearchQuery={setSearchQuery}
-        isNotificationOpen={isNotificationOpen}
-        setIsNotificationOpen={setIsNotificationOpen}
-        isChatOpen={isChatOpen}
-        setIsChatOpen={setIsChatOpen}
-        notifications={notifications}
-        markAllNotificationsAsRead={markAllNotificationsAsRead}
-        chatMessages={chatMessages}
-        newMessage={newMessage}
-        setNewMessage={setNewMessage}
-        handleSendMessage={handleSendMessage}
-        user={authUser}
-      />
+      <TopBar activeTab={activeTab} setActiveTab={setActiveTab} isSidebarOpen={isSidebarOpen} setIsSidebarOpen={setIsSidebarOpen} searchQuery={searchQuery} setSearchQuery={setSearchQuery} isNotificationOpen={isNotificationOpen} setIsNotificationOpen={setIsNotificationOpen} isChatOpen={isChatOpen} setIsChatOpen={setIsChatOpen} notifications={notifications} markAllNotificationsAsRead={markAllNotificationsAsRead} chatMessages={chatMessages} newMessage={newMessage} setNewMessage={setNewMessage} handleSendMessage={handleSendMessage} user={authUser} />
 
       {activeTab === 'Teams' && (
-        <Teams
-          isSidebarOpen={isSidebarOpen}
-          setIsSidebarOpen={setIsSidebarOpen}
-          groups={groups}
-          dms={dms}
-          activeChatId={activeChatId}
-          setActiveChatId={setActiveChatId}
-          activeChatInfo={activeChatInfo}
-          handleCreateGroup={handleCreateGroup}
-          chatMessagesLog={chatMessagesLog}
-          handleAddReaction={handleAddReaction}
-          chatInputText={chatInputText}
-          setChatInputText={setChatInputText}
-          handleKeyPress={handleKeyPress}
-          handleSendTeamMessage={handleSendTeamMessage}
-        />
+        <Teams isSidebarOpen={isSidebarOpen} setIsSidebarOpen={setIsSidebarOpen} groups={groups} dms={dms} activeChatId={activeChatId} setActiveChatId={setActiveChatId} activeChatInfo={activeChatInfo} handleCreateGroup={handleCreateGroup} chatMessagesLog={chatMessagesLog} handleAddReaction={handleAddReaction} chatInputText={chatInputText} setChatInputText={setChatInputText} handleKeyPress={handleKeyPress} handleSendTeamMessage={handleSendTeamMessage} user={authUser} />
       )}
-
       {activeTab === 'Standups' && (
         <Standups setActiveTab={setActiveTab} isSidebarOpen={isSidebarOpen} handleAddHistoryLog={handleAddHistoryLog} userName={authUser?.name} user={authUser} />
       )}
-
       {activeTab === 'History' && (
         <History isSidebarOpen={isSidebarOpen} historyLogs={historyLogs} searchQuery={searchQuery} />
       )}
-
       {activeTab === 'Settings' && (
         <Settings isSidebarOpen={isSidebarOpen} user={authUser} />
       )}
-
-      {activeTab !== 'Teams' && activeTab !== 'Standups' && activeTab !== 'History' && activeTab !== 'Settings' && (
-        <Dashboard
-          activeTab={activeTab}
-          setActiveTab={setActiveTab}
-          isSidebarOpen={isSidebarOpen}
-          selectedDate={selectedDate}
-          setSelectedDate={setSelectedDate}
-          handlePrevDay={handlePrevDay}
-          handleNextDay={handleNextDay}
-          handleDaySelect={handleDaySelect}
-          calendarDays={calendarDays}
-          filteredMeetings={filteredMeetings}
-          meetings={meetings}
-          setMeetings={setMeetings}
-          setIsNewStandupOpen={setIsNewStandupOpen}
-          teamMembers={teamMembers}
-          activeTeamMemberId={activeTeamMemberId}
-          setActiveTeamMemberId={setActiveTeamMemberId}
-          toggleStatus={toggleStatus}
-        />
+      {!['Teams', 'Standups', 'History', 'Settings'].includes(activeTab) && (
+        <Dashboard activeTab={activeTab} setActiveTab={setActiveTab} isSidebarOpen={isSidebarOpen} setIsNewStandupOpen={setIsNewStandupOpen} />
       )}
 
-      <NewStandupModal
-        isOpen={isNewStandupOpen}
-        setIsNewStandupOpen={setIsNewStandupOpen}
-        formData={formData}
-        setFormData={setFormData}
-        handleCreateStandup={handleCreateStandup}
-        selectedDate={selectedDate}
-        calendarDays={calendarDays}
-      />
+      <NewStandupModal isOpen={isNewStandupOpen} setIsNewStandupOpen={setIsNewStandupOpen} formData={formData} setFormData={setFormData} handleCreateStandup={onCreateStandup} selectedDate={selectedDate} calendarDays={calendarDays} />
+
+      <ToastContainer toasts={toasts} onRemove={removeToast} />
     </div>
   );
 }
 
-export default App;
+// ─── Root: wrap everything in providers ────────────────────────────────
+export default function App() {
+  return (
+    <ToastProvider>
+      <AuthProvider>
+        <MeetingsProvider>
+          <TeamProvider>
+            <ChatProvider>
+              <AppShell />
+            </ChatProvider>
+          </TeamProvider>
+        </MeetingsProvider>
+      </AuthProvider>
+    </ToastProvider>
+  );
+}

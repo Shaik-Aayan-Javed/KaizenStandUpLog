@@ -1,15 +1,52 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { History, Calendar, Ban } from 'lucide-react';
+import { useToast } from '../hooks/useToast';
 
 function Standups({ setActiveTab, isSidebarOpen, handleAddHistoryLog, userName, user }) {
   const [yesterday, setYesterday] = useState('');
   const [today, setToday] = useState('');
   const [blockers, setBlockers] = useState('');
+  const [lastSaved, setLastSaved] = useState(null);
+  
+  const { toast } = useToast();
+
+  // Load from localStorage on mount
+  useEffect(() => {
+    const savedDraft = localStorage.getItem('kaizen_standup_draft');
+    if (savedDraft) {
+      try {
+        const parsed = JSON.parse(savedDraft);
+        if (parsed.yesterday) setYesterday(parsed.yesterday);
+        if (parsed.today) setToday(parsed.today);
+        if (parsed.blockers) setBlockers(parsed.blockers);
+        if (parsed.timestamp) setLastSaved(new Date(parsed.timestamp));
+      } catch (e) {
+        console.error('Failed to parse draft from localStorage');
+      }
+    }
+  }, []);
+
+  // Auto save draft to localStorage
+  useEffect(() => {
+    // Only save if there's actual content to save
+    if (!yesterday && !today && !blockers && !lastSaved) return;
+    
+    const timer = setTimeout(() => {
+      localStorage.setItem('kaizen_standup_draft', JSON.stringify({
+        yesterday, today, blockers, timestamp: Date.now()
+      }));
+      setLastSaved(new Date());
+    }, 1500);
+    
+    return () => clearTimeout(timer);
+  }, [yesterday, today, blockers]);
 
   const handleDiscard = () => {
     setYesterday('');
     setToday('');
     setBlockers('');
+    localStorage.removeItem('kaizen_standup_draft');
+    setLastSaved(null);
     if (setActiveTab) setActiveTab('Dashboard');
   };
 
@@ -41,11 +78,21 @@ function Standups({ setActiveTab, isSidebarOpen, handleAddHistoryLog, userName, 
       handleAddHistoryLog(newLog);
     }
     
-    alert('Standup submitted successfully!');
+    toast.success('Standup submitted successfully!');
     setYesterday('');
     setToday('');
     setBlockers('');
+    localStorage.removeItem('kaizen_standup_draft');
+    setLastSaved(null);
     if (setActiveTab) setActiveTab('History');
+  };
+
+  const getSavedText = () => {
+    if (!lastSaved) return 'Not saved';
+    const mins = Math.floor((Date.now() - lastSaved.getTime()) / 60000);
+    if (mins === 0) return 'Draft saved just now';
+    if (mins === 1) return 'Draft saved 1 min ago';
+    return `Draft saved ${mins} mins ago`;
   };
 
   return (
@@ -114,8 +161,8 @@ function Standups({ setActiveTab, isSidebarOpen, handleAddHistoryLog, userName, 
 
       <div className="mt-8 pt-6 border-t border-outline-variant/40 flex items-center justify-between">
         <div className="flex items-center gap-2 text-xs text-on-surface-variant">
-          <span className="w-2 h-2 rounded-full bg-outline-variant"></span>
-          Draft saved 2 mins ago
+          <span className={`w-2 h-2 rounded-full ${lastSaved ? 'bg-secondary' : 'bg-outline-variant'}`}></span>
+          {getSavedText()}
         </div>
         <div className="flex items-center gap-4">
           <button 

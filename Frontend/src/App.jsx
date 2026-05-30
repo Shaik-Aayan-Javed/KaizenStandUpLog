@@ -42,6 +42,8 @@ function getWeekDays(date) {
   });
 }
 
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5001';
+
 function App() {
   const [activeTab, setActiveTab] = useState(() => {
     return window.sessionStorage.getItem('kaizen_active_tab') || 'Dashboard';
@@ -118,11 +120,11 @@ function App() {
     const fetchAllData = async () => {
       try {
         const [meetingsRes, teamRes, groupsRes, historyRes, chatRes] = await Promise.all([
-          fetch("http://localhost:5001/api/meetings"),
-          fetch("http://localhost:5001/api/teammembers"),
-          fetch("http://localhost:5001/api/groups"),
-          fetch("http://localhost:5001/api/historylogs"),
-          fetch("http://localhost:5001/api/chatmessages")
+          fetch(`${API_URL}/api/meetings`),
+          fetch(`${API_URL}/api/teammembers`),
+          fetch(`${API_URL}/api/groups`),
+          fetch(`${API_URL}/api/historylogs`),
+          fetch(`${API_URL}/api/chatmessages`)
         ]);
           const mapId = (arr) => arr.map(item => ({ ...item, id: item._id }));
         
@@ -155,7 +157,7 @@ function App() {
 
   const handleAddHistoryLog = async (newLog) => {
     try {
-      const res = await fetch("http://localhost:5001/api/historylogs", {
+      const res = await fetch(`${API_URL}/api/historylogs`, {
         method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(newLog)
       });
       const saved = await res.json();
@@ -175,7 +177,7 @@ function App() {
 
   const handleLogin = async ({ email, password }) => {
     try {
-      const response = await fetch("http://localhost:5001/api/users/login", {
+      const response = await fetch(`${API_URL}/api/users/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password }),
@@ -196,7 +198,7 @@ function App() {
 
   const handleRegister = async ({ fullName, email, password }) => {
     try {
-      const response = await fetch("http://localhost:5001/api/users/add-user", {
+      const response = await fetch(`${API_URL}/api/users/add-user`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ name: fullName, email, password }),
@@ -244,13 +246,13 @@ function App() {
       ...styles
     };
     try {
-      const res = await fetch("http://localhost:5001/api/meetings", {
+      const res = await fetch(`${API_URL}/api/meetings`, {
         method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(newMeeting)
       });
       const saved = await res.json();
       // Refresh meetings from backend to avoid stale state and ensure new times show correctly
       try {
-        const allRes = await fetch("http://localhost:5001/api/meetings");
+        const allRes = await fetch(`${API_URL}/api/meetings`);
         const all = await allRes.json();
         const mapId = (arr) => arr.map(item => ({ ...item, id: item._id }));
         setMeetings(mapId(all).map((item) => ({ ...item, completed: item.completed ?? false })));
@@ -271,7 +273,7 @@ function App() {
       Blocked: { color: 'bg-tertiary-fixed-dim', text: 'text-tertiary' }
     };
     try {
-      const res = await fetch(`http://localhost:5001/api/teammembers/${memberId}`, {
+      const res = await fetch(`${API_URL}/api/teammembers/${memberId}`, {
         method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ status: newStatus, statusColor: statusMap[newStatus].color, textColor: statusMap[newStatus].text })
       });
       const updated = await res.json();
@@ -298,7 +300,7 @@ function App() {
       text: chatInputText 
     };
     try {
-      const res = await fetch("http://localhost:5001/api/chatmessages", {
+      const res = await fetch(`${API_URL}/api/chatmessages`, {
         method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(msgObj)
       });
       const saved = await res.json();
@@ -317,7 +319,7 @@ function App() {
 
   const handleAddReaction = async (messageId, emoji) => {
     try {
-      const res = await fetch(`http://localhost:5001/api/chatmessages/${messageId}/react`, {
+      const res = await fetch(`${API_URL}/api/chatmessages/${messageId}/react`, {
         method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ emoji })
       });
       const updated = await res.json();
@@ -336,7 +338,7 @@ function App() {
     if (!cleanName) return;
     const newChan = { groupId: cleanName, name: cleanName, type: 'channel', members: 1, desc: 'General project workspace' };
     try {
-      const res = await fetch("http://localhost:5001/api/groups", {
+      const res = await fetch(`${API_URL}/api/groups`, {
         method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(newChan)
       });
       const saved = await res.json();

@@ -24,13 +24,19 @@ app.use("/api/groups", groupRoutes);
 app.use("/api/chatmessages", chatMessageRoutes);
 
 mongoose.connect(process.env.MONGO_URL)
-.then(() => {
-  console.log("MongoDB Connected");
-})
-.catch((error) => {
-  console.log(error);
+  .then(() => {
+    console.log("MongoDB Connected");
+  })
+  .catch((error) => {
+    console.log(error);
+  });
+
+app.get("/", (req, res) => {
+  res.send("Kaizen StandUp Log API is running");
 });
 
-app.listen(process.env.PORT, () => {
-  console.log("Server Started");
+const PORT = process.env.PORT || 5000;
+
+app.listen(PORT, () => {
+  console.log(`Server Started on port ${PORT}`);
 });

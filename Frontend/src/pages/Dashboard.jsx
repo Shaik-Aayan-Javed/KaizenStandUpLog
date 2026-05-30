@@ -35,6 +35,8 @@ const sprintCategoryKeys = {
   '#management': 'testing'
 };
 
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5001';
+
 function Dashboard({
   activeTab,
   setActiveTab,
@@ -84,7 +86,7 @@ function Dashboard({
 
   const handleMarkDone = async (meetingId) => {
     try {
-      const res = await fetch(`http://localhost:5001/api/meetings/${meetingId}`, {
+      const res = await fetch(`${API_URL}/api/meetings/${meetingId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ completed: true })
@@ -211,7 +213,7 @@ function Dashboard({
                             onClick={async () => {
                               if (confirm(`Remove "${meeting.title}" schedule card?`)) {
                                 try {
-                                  await fetch(`http://localhost:5001/api/meetings/${meeting.id}`, { method: 'DELETE' });
+                                  await fetch(`${API_URL}/api/meetings/${meeting.id}`, { method: 'DELETE' });
                                   setMeetings(meetings.filter((m) => m.id !== meeting.id));
                                 } catch (err) {
                                   console.error("Failed to delete meeting", err);

@@ -10,21 +10,46 @@ import LeftSidebar from './components/LeftSidebar';
 import TopBar from './components/TopBar';
 import NewStandupModal from './components/NewStandupModal';
 
-const CALENDAR_DAYS = [
-  { label: 'MON', date: 13, labelFull: 'Monday' },
-  { label: 'TUE', date: 14, labelFull: 'Tuesday' },
-  { label: 'WED', date: 15, labelFull: 'Wednesday' },
-  { label: 'THU', date: 16, labelFull: 'Thursday' },
-  { label: 'FRI', date: 17, labelFull: 'Friday' },
-  { label: 'SAT', date: 18, labelFull: 'Saturday', dim: true },
-  { label: 'SUN', date: 19, labelFull: 'Sunday', dim: true }
-];
+function formatLocalDate(date) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
+function getWeekStart(date) {
+  const d = new Date(date);
+  const day = d.getDay();
+  const diff = (day + 6) % 7; // make Monday as first day of week
+  d.setDate(d.getDate() - diff);
+  d.setHours(0, 0, 0, 0);
+  return d;
+}
+
+function getWeekDays(date) {
+  const start = getWeekStart(date);
+  return [...Array(7)].map((_, index) => {
+    const current = new Date(start);
+    current.setDate(start.getDate() + index);
+    return {
+      label: ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'][current.getDay()],
+      labelFull: ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'][current.getDay()],
+      date: current.getDate(),
+      monthName: current.toLocaleString('default', { month: 'long' }),
+      isoDate: formatLocalDate(current),
+      dim: false
+    };
+  });
+}
 
 function App() {
   const [activeTab, setActiveTab] = useState(() => {
     return window.sessionStorage.getItem('kaizen_active_tab') || 'Dashboard';
   });
-  const [selectedDate, setSelectedDate] = useState(14);
+  const [selectedDate, setSelectedDate] = useState(() => {
+    const today = new Date();
+    return new Date(today.getFullYear(), today.getMonth(), today.getDate());
+  });
   const [meetings, setMeetings] = useState([]);
   const [teamMembers, setTeamMembers] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
@@ -40,9 +65,18 @@ function App() {
   const [chatMessagesLog, setChatMessagesLog] = useState({});
   const [chatInputText, setChatInputText] = useState('');
 
-  const [formData, setFormData] = useState({ title: '', time: '10:00', endTime: '11:00', tag: '#engineering', type: 'general', status: '', isActive: false, isPinned: false });
+  const [formData, setFormData] = useState({ title: '', time: '10:00', endTime: '11:00', tag: '#analysis', type: 'general', status: '', isActive: false, isPinned: false });
+
+  const calendarDays = useMemo(() => getWeekDays(selectedDate), [selectedDate]);
+
+  const sprintTagStyles = {
+    '#analysis': { borderClass: 'border-secondary', leftBarBg: 'bg-secondary', tagColor: 'bg-secondary-container text-on-secondary-container' },
+    '#design': { borderClass: 'border-primary', leftBarBg: 'bg-primary', tagColor: 'bg-primary-fixed text-on-primary-fixed-variant' },
+    '#development': { borderClass: 'border-tertiary-container', leftBarBg: 'bg-tertiary-container', tagColor: 'bg-tertiary-fixed text-on-tertiary-fixed-variant' },
+    '#testing': { borderClass: 'border-error', leftBarBg: 'bg-error', tagColor: 'bg-error-container text-on-error-container' }
+  };
   const [notifications, setNotifications] = useState([
-    { id: 1, text: 'Sarah Kim tagged you in #architecture sync', time: '5m ago', read: false },
+    { id: 1, text: 'Sarah Kim tagged you in #analysis sync', time: '5m ago', read: false },
     { id: 2, text: 'Daily Standup scheduled for 09:00', time: '1h ago', read: true }
   ]);
   const [chatMessages, setChatMessages] = useState([{ id: 1, sender: 'Sarah Kim', text: 'Are we set for backend sync?', time: '10:22 AM' }]);
@@ -90,7 +124,7 @@ function App() {
           fetch("http://localhost:5001/api/historylogs"),
           fetch("http://localhost:5001/api/chatmessages")
         ]);
-        const mapId = (arr) => arr.map(item => ({ ...item, id: item._id }));
+          const mapId = (arr) => arr.map(item => ({ ...item, id: item._id }));
         
         const m = await meetingsRes.json();
         const t = await teamRes.json();
@@ -98,7 +132,7 @@ function App() {
         const h = await historyRes.json();
         const c = await chatRes.json();
         
-        setMeetings(mapId(m));
+        setMeetings(mapId(m).map((item) => ({ ...item, completed: item.completed ?? false })));
         setTeamMembers(mapId(t));
         
         const groupsWithId = mapId(g);
@@ -129,7 +163,15 @@ function App() {
     } catch (err) { console.error(err); }
   };
 
-  const filteredMeetings = useMemo(() => meetings.filter((m) => m.day === selectedDate && (m.title.toLowerCase().includes(searchQuery.toLowerCase()) || m.tag.toLowerCase().includes(searchQuery.toLowerCase()))), [meetings, selectedDate, searchQuery]);
+  const filteredMeetings = useMemo(() => {
+    const selectedIso = selectedDate.toISOString().split('T')[0];
+    return meetings.filter((m) => {
+      const matchesDay = m.day === selectedDate.getDate();
+      const matchesDate = m.date === selectedIso;
+      const matchesSearch = m.title.toLowerCase().includes(searchQuery.toLowerCase()) || (m.tag || '').toLowerCase().includes(searchQuery.toLowerCase());
+      return (matchesDay || matchesDate) && !m.completed && matchesSearch;
+    });
+  }, [meetings, selectedDate, searchQuery]);
 
   const handleLogin = async ({ email, password }) => {
     try {
@@ -170,27 +212,55 @@ function App() {
 
   const handleDaySelect = (day) => setSelectedDate(day);
   const handleNextDay = () => {
-    const currentIndex = CALENDAR_DAYS.findIndex((d) => d.date === selectedDate);
-    if (currentIndex < CALENDAR_DAYS.length - 1) setSelectedDate(CALENDAR_DAYS[currentIndex + 1].date);
+    setSelectedDate((prev) => {
+      const next = new Date(prev);
+      next.setDate(prev.getDate() + 1);
+      return next;
+    });
   };
   const handlePrevDay = () => {
-    const currentIndex = CALENDAR_DAYS.findIndex((d) => d.date === selectedDate);
-    if (currentIndex > 0) setSelectedDate(CALENDAR_DAYS[currentIndex - 1].date);
+    setSelectedDate((prev) => {
+      const previous = new Date(prev);
+      previous.setDate(prev.getDate() - 1);
+      return previous;
+    });
   };
 
   const handleCreateStandup = async (e) => {
     e.preventDefault();
     if (!formData.title.trim()) return;
-    const newMeeting = { time: formData.time, endTime: formData.endTime, title: formData.title, tag: formData.tag, borderClass: 'border-primary', leftBarBg: 'bg-primary', tagColor: 'bg-primary-fixed text-on-primary-fixed-variant', day: selectedDate, isActive: formData.isActive, isPinned: formData.isPinned };
+    const styles = sprintTagStyles[formData.tag] || sprintTagStyles['#analysis'];
+    const selectedIso = selectedDate.toISOString().split('T')[0];
+    const newMeeting = {
+      time: formData.time,
+      endTime: formData.endTime,
+      title: formData.title,
+      tag: formData.tag,
+      day: selectedDate.getDate(),
+      date: selectedIso,
+      isActive: formData.isActive,
+      isPinned: formData.isPinned,
+      completed: false,
+      ...styles
+    };
     try {
       const res = await fetch("http://localhost:5001/api/meetings", {
         method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(newMeeting)
       });
       const saved = await res.json();
-      setMeetings([...meetings, { ...saved, id: saved._id }]);
+      // Refresh meetings from backend to avoid stale state and ensure new times show correctly
+      try {
+        const allRes = await fetch("http://localhost:5001/api/meetings");
+        const all = await allRes.json();
+        const mapId = (arr) => arr.map(item => ({ ...item, id: item._id }));
+        setMeetings(mapId(all).map((item) => ({ ...item, completed: item.completed ?? false })));
+      } catch (err) {
+        // fallback: append the saved item if refresh fails
+        setMeetings((prev) => [...prev, { ...saved, id: saved._id }]);
+      }
     } catch(err) { console.error(err); }
     setIsNewStandupOpen(false);
-    setFormData({ title: '', time: '10:00', endTime: '11:00', tag: '#engineering', type: 'general', status: '', isActive: false, isPinned: false });
+    setFormData({ title: '', time: '10:00', endTime: '11:00', tag: '#analysis', type: 'general', status: '', isActive: false, isPinned: false });
   };
 
   const toggleStatus = async (memberId, newStatus) => {
@@ -365,7 +435,7 @@ function App() {
           handlePrevDay={handlePrevDay}
           handleNextDay={handleNextDay}
           handleDaySelect={handleDaySelect}
-          calendarDays={CALENDAR_DAYS}
+          calendarDays={calendarDays}
           filteredMeetings={filteredMeetings}
           meetings={meetings}
           setMeetings={setMeetings}
@@ -384,7 +454,7 @@ function App() {
         setFormData={setFormData}
         handleCreateStandup={handleCreateStandup}
         selectedDate={selectedDate}
-        calendarDays={CALENDAR_DAYS}
+        calendarDays={calendarDays}
       />
     </div>
   );

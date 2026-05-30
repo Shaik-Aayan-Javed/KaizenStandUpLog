@@ -17,7 +17,7 @@ function NewStandupModal({ isOpen, setIsNewStandupOpen, formData, setFormData, h
           <div>
             <h3 className="text-sm font-bold text-primary font-headline-md leading-none">Schedule a Task</h3>
             <span className="text-[10px] text-on-surface-variant font-medium block mt-1">
-              Adding to {calendarDays.find((d) => d.date === selectedDate)?.labelFull} 1{selectedDate}, 2023
+              Adding to {calendarDays.find((d) => d.isoDate === selectedDate.toISOString().split('T')[0])?.labelFull} {selectedDate.getDate()}, {selectedDate.getFullYear()}
             </span>
           </div>
         </div>
@@ -28,7 +28,7 @@ function NewStandupModal({ isOpen, setIsNewStandupOpen, formData, setFormData, h
             required
             value={formData.title}
             onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-            placeholder="e.g. API Architecture Review"
+            placeholder="e.g. Analysis Planning"
             className="w-full bg-slate-50 border border-outline-variant rounded-lg px-3 py-2 text-xs focus:outline-none focus:ring-1 focus:ring-primary"
           />
           <div className="grid grid-cols-2 gap-4">
@@ -42,10 +42,10 @@ function NewStandupModal({ isOpen, setIsNewStandupOpen, formData, setFormData, h
             </div>
           </div>
           <select value={formData.tag} onChange={(e) => setFormData({ ...formData, tag: e.target.value })} className="w-full bg-slate-50 border border-outline-variant rounded-lg px-3 py-2 text-xs">
-            <option value="#engineering">#engineering</option>
-            <option value="#architecture">#architecture</option>
-            <option value="#product">#product</option>
-            <option value="#management">#management</option>
+            <option value="#analysis">#analysis</option>
+            <option value="#design">#design</option>
+            <option value="#development">#development</option>
+            <option value="#testing">#testing</option>
           </select>
           <div className="flex gap-3 py-2">
             <button

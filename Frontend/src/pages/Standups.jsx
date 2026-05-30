@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { History, Calendar, Ban } from 'lucide-react';
 
-function Standups({ setActiveTab, isSidebarOpen, handleAddHistoryLog, userName }) {
+function Standups({ setActiveTab, isSidebarOpen, handleAddHistoryLog, userName, user }) {
   const [yesterday, setYesterday] = useState('');
   const [today, setToday] = useState('');
   const [blockers, setBlockers] = useState('');
@@ -25,11 +25,11 @@ function Standups({ setActiveTab, isSidebarOpen, handleAddHistoryLog, userName }
         id: Date.now(),
         dateGroup: dateGroup,
         dateGroupColor: 'bg-[#d5ecd4] text-[#4a7251]', // Using the green color for new logs
-        user: 'Alex Rivera',
-        role: 'Lead Developer',
+        user: user?.name || 'Alex Rivera',
+        role: user?.title || 'Lead Developer',
         time: now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
         dateFull: now.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }),
-        avatar: 'https://i.pravatar.cc/150?img=47',
+        avatar: user?.avatar || 'https://i.pravatar.cc/150?img=47',
         snippet: (yesterday || today || blockers).substring(0, 50) + '...',
 
         today: yesterday || 'Nothing entered.',

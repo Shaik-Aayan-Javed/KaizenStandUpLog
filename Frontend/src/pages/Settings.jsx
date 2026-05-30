@@ -1,12 +1,12 @@
 import React, { useState } from 'react';
 import { User, Briefcase, Bell, Lock, Zap, Upload, Eye } from 'lucide-react';
 
-function Settings({ isSidebarOpen }) {
+function Settings({ isSidebarOpen, user }) {
   const [profileData, setProfileData] = useState({
-    fullName: 'Alex Rivera',
+    fullName: user?.name || 'Alex Rivera',
     title: 'Lead Frontend Engineer',
-    email: 'alex.rivera@kaizen.io',
-    avatar: 'https://i.pravatar.cc/150?img=47'
+    email: user?.email || 'alex.rivera@kaizen.io',
+    avatar: user?.avatar || 'https://i.pravatar.cc/150?img=47'
   });
 
   const [workspaceData, setWorkspaceData] = useState({
@@ -20,6 +20,29 @@ function Settings({ isSidebarOpen }) {
     emailDigest: true,
     pushNotifications: true
   });
+
+  const [isSavingProfile, setIsSavingProfile] = useState(false);
+  const [savedProfile, setSavedProfile] = useState(false);
+  const [isSavingWorkspace, setIsSavingWorkspace] = useState(false);
+  const [savedWorkspace, setSavedWorkspace] = useState(false);
+
+  const handleSaveProfile = () => {
+    setIsSavingProfile(true);
+    setTimeout(() => {
+      setIsSavingProfile(false);
+      setSavedProfile(true);
+      setTimeout(() => setSavedProfile(false), 2000);
+    }, 800);
+  };
+
+  const handleSaveWorkspace = () => {
+    setIsSavingWorkspace(true);
+    setTimeout(() => {
+      setIsSavingWorkspace(false);
+      setSavedWorkspace(true);
+      setTimeout(() => setSavedWorkspace(false), 2000);
+    }, 800);
+  };
 
   const handleProfileChange = (field, value) => {
     setProfileData({ ...profileData, [field]: value });
@@ -99,9 +122,19 @@ function Settings({ isSidebarOpen }) {
             </div>
           </div>
 
-          <div className="pt-6 flex justify-end">
-            <button className="px-6 py-2.5 bg-primary text-on-primary font-bold rounded-lg hover:bg-primary-container transition-colors text-sm">
-              Save Changes
+          <div className="pt-6 flex justify-end items-center gap-3">
+            {savedProfile && <span className="text-green-600 text-sm font-medium animate-pulse">Changes saved!</span>}
+            <button 
+              onClick={handleSaveProfile}
+              disabled={isSavingProfile}
+              className="px-6 py-2.5 bg-primary text-on-primary font-bold rounded-lg hover:bg-primary-container transition-colors text-sm disabled:opacity-70 flex items-center justify-center min-w-[140px]"
+            >
+              {isSavingProfile ? (
+                <span className="flex items-center gap-2">
+                  <div className="w-4 h-4 border-2 border-on-primary border-t-transparent rounded-full animate-spin"></div>
+                  Saving...
+                </span>
+              ) : 'Save Changes'}
             </button>
           </div>
         </section>
@@ -157,9 +190,19 @@ function Settings({ isSidebarOpen }) {
             </div>
           </div>
 
-          <div className="pt-6 flex justify-end">
-            <button className="px-6 py-2.5 bg-primary text-on-primary font-bold rounded-lg hover:bg-primary-container transition-colors text-sm">
-              Save Changes
+          <div className="pt-6 flex justify-end items-center gap-3">
+            {savedWorkspace && <span className="text-green-600 text-sm font-medium animate-pulse">Workspace updated!</span>}
+            <button 
+              onClick={handleSaveWorkspace}
+              disabled={isSavingWorkspace}
+              className="px-6 py-2.5 bg-primary text-on-primary font-bold rounded-lg hover:bg-primary-container transition-colors text-sm disabled:opacity-70 flex items-center justify-center min-w-[140px]"
+            >
+              {isSavingWorkspace ? (
+                <span className="flex items-center gap-2">
+                  <div className="w-4 h-4 border-2 border-on-primary border-t-transparent rounded-full animate-spin"></div>
+                  Saving...
+                </span>
+              ) : 'Save Changes'}
             </button>
           </div>
         </section>

@@ -9,7 +9,7 @@ const teamMemberRoutes = require("./routes/teamMemberRoutes");
 const groupRoutes = require("./routes/groupRoutes");
 const chatMessageRoutes = require("./routes/chatMessageRoutes");
 
-dotenv.config({ path: __dirname + '/.env' });
+dotenv.config({ path: __dirname + '/.env', override: true });
 
 const app = express();
 

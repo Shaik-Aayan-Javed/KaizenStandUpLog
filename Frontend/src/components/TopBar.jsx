@@ -94,7 +94,7 @@ function TopBar({
         <img
           onClick={() => alert('Profile clicked')}
           src={user?.avatar || 'https://i.pravatar.cc/150?img=47'}
-          alt={user?.fullName || 'Kaizen User'}
+          alt={user?.name || 'Kaizen User'}
           className="w-9 h-9 rounded-full border border-outline-variant/60 cursor-pointer shadow-sm hover:ring-2 hover:ring-primary/30 transition-all"
         />
       </div>
